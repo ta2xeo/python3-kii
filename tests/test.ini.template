@@ -4,5 +4,15 @@ app_key = 0123456789abcdefg
 client_id = 0123456789abcdefg
 client_secret = 0123456789abcdefghijklmnopqrstuvwxyz
 
+
 [location]
 region = JP
+
+
+[test_user]
+login_name = user_123456
+password = 123ABC
+email = user_123456@example.com
+phone = +819012345678
+display_name = 御殿場
+country = JP
