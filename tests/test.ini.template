@@ -1,0 +1,8 @@
+[appinfo]
+app_id = 0123456789
+app_key = 0123456789abcdefg
+client_id = 0123456789abcdefg
+client_secret = 0123456789abcdefghijklmnopqrstuvwxyz
+
+[location]
+region = JP
