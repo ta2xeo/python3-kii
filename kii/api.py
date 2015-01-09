@@ -117,10 +117,3 @@ class KiiAdminAPI(KiiAPI):
                                client_id=self.client_id,
                                client_secret=self.client_secret)
         return req.request()
-
-
-class JPKiiAPI(KiiAPI):
-    def __init__(self, *args, **kwargs):
-        if 'region' in kwargs:
-            del kwargs['region']
-        super().__init__(*args, region='JP', **kwargs)
