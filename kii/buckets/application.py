@@ -282,7 +282,7 @@ class QueryForObjects(BucketsHelper):
     def first(self):
         try:
             return self.one()
-        except KiiNotFoundError:
+        except KiiObjectNotFoundError:
             return None
 
     def one(self):
@@ -292,7 +292,7 @@ class QueryForObjects(BucketsHelper):
         try:
             return results[0]
         except IndexError as e:
-            raise KiiNotFoundError('object not found') from e
+            raise KiiObjectNotFoundError from e
 
     def limit(self, limit):
         self.best_effort_limit = limit

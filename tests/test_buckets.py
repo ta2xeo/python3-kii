@@ -507,7 +507,7 @@ class TestApplicationQuery:
         with pytest.raises(KiiMultipleResultsFoundError):
             bucket.query(EqualClause('name', 'test user')).one()
 
-        with pytest.raises(KiiNotFoundError):
+        with pytest.raises(KiiObjectNotFoundError):
             bucket.query(EqualClause('name', 'unknown')).one()
 
     def test_query_first(self):

@@ -75,6 +75,7 @@ class KiiAPIError(Exception):
             'OBJECT_BODY_NOT_FOUND': KiiObjectBodyNotFoundError,
             'ObjectBodyNotFoundException': KiiObjectBodyNotFoundError,
             'OBJECT_NOT_FOUND': KiiObjectNotFoundError,
+            'OBJECT_VERSION_IS_STALE': KiiObjectVersionIsStaleError,
             'PASSWORD_TOO_SHORT': KiiPasswordTooShortError,
             'UNAUTHORIZED': KiiUnauthorizedError,
             'USER_ALREADY_EXISTS': KiiUserAlreadyExistsError,
@@ -191,6 +192,10 @@ class KiiObjectBodyNotFoundError(KiiAPIError):
 
 
 class KiiObjectNotFoundError(KiiAPIError):
+    default_message = 'object not found error'
+
+
+class KiiObjectVersionIsStaleError(KiiAPIError):
     pass
 
 
