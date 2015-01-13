@@ -72,7 +72,7 @@ class ObjectResult(BaseResult):
 
     @property
     def _created(self):
-        return self._result['_created']
+        return datetime.fromtimestamp((self._result['_created']) / 1000)
 
     @property
     def _id(self):
@@ -80,7 +80,7 @@ class ObjectResult(BaseResult):
 
     @property
     def _modified(self):
-        return self._result['_modified']
+        return datetime.fromtimestamp((self._result['_modified']) / 1000)
 
     @property
     def _owner(self):

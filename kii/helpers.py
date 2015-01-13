@@ -1,3 +1,4 @@
+import logging
 import requests
 
 from kii.exceptions import (
@@ -5,6 +6,9 @@ from kii.exceptions import (
     KiiHasNotAccessTokenError,
 )
 from kii.results import *
+
+
+logger = logging.getLogger(__name__)
 
 
 class RequestHelper:
@@ -24,10 +28,13 @@ class RequestHelper:
         }
 
     def request(self, **kwargs):
+        logger.debug('METHOD:%s URL:%s HEADERS:%s KWARGS:%s', self.method, self.url, self.headers, kwargs)
         response = requests.request(self.method,
                                     self.url,
                                     headers=self.headers,
                                     **kwargs)
+
+        logger.info('%s %s %d', self.method, self.url, response.status_code)
 
         if response.status_code >= 400:
             raise KiiAPIError.distribute_error(response)
