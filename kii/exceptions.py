@@ -151,10 +151,6 @@ class KiiAccountTypeNotSupportedError(KiiAPIError):
     pass
 
 
-class KiiBodyNotExistError(KiiAPIError):
-    pass
-
-
 class KiiBucketNotFoundError(KiiAPIError):
     pass
 
