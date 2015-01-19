@@ -162,6 +162,8 @@ class HasFieldClause(Clause):
 class InClause(Clause):
     def __init__(self, field, values):
         self.field = field
+        if not isinstance(values, (tuple, list)):
+            values = tuple(values)
         self.values = values
 
     def query(self):
