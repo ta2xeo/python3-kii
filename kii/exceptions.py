@@ -77,6 +77,7 @@ class KiiAPIError(Exception):
             'OBJECT_NOT_FOUND': KiiObjectNotFoundError,
             'OBJECT_VERSION_IS_STALE': KiiObjectVersionIsStaleError,
             'PASSWORD_TOO_SHORT': KiiPasswordTooShortError,
+            'QUERY_NOT_SUPPORTED': KiiQueryNotSupportedError,
             'UNAUTHORIZED': KiiUnauthorizedError,
             'USER_ALREADY_EXISTS': KiiUserAlreadyExistsError,
             'USER_NOT_FOUND': KiiUserNotFoundError,
@@ -196,6 +197,10 @@ class KiiObjectVersionIsStaleError(KiiAPIError):
 
 
 class KiiPasswordTooShortError(KiiAPIError):
+    pass
+
+
+class KiiQueryNotSupportedError(KiiAPIError):
     pass
 
 
