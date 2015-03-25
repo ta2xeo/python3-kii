@@ -5,6 +5,7 @@ import json
 from kii.buckets.clauses import (
     Clause,
     AllClause,
+    AndClause,
 )
 from kii.exceptions import *
 from kii.helpers import BucketsHelper
@@ -245,6 +246,15 @@ class QueryForObjects(BucketsHelper):
             raise KiiInvalidClauseError
 
         self._clause = clause
+
+    def filter(self, *clauses):
+        clause = AndClause(self.clause, *clauses)
+        instance = self.__class__(self.scope, clause)
+        instance._order_by = self._order_by
+        instance.descending = self.descending
+        instance.pagination_key = self.pagination_key
+        instance.best_effort_limit = self.best_effort_limit
+        return instance
 
     def request(self):
         return super().request(json=self._assemble())
