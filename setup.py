@@ -31,7 +31,7 @@ requires = [
 
 
 setup(name='python3-kii',
-      version='0.2.0',
+      version='0.2.1',
       description='A Python Library for Kii Cloud REST API',
       classifiers = [
           "Programming Language :: Python :: 3",

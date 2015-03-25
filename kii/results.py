@@ -258,7 +258,7 @@ class QueryResult(BaseResult):
         self.query_description = result.get('queryDescription', None)
 
         if self.next_pagination_key:
-            helper = self.request_helper
+            helper = self.request_helper.clone()
             helper.pagination_key = self.next_pagination_key
             if helper.best_effort_limit is not None:
                 helper.best_effort_limit -= len(self)

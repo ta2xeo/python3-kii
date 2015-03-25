@@ -247,13 +247,17 @@ class QueryForObjects(BucketsHelper):
 
         self._clause = clause
 
-    def filter(self, *clauses):
-        clause = AndClause(self.clause, *clauses)
-        instance = self.__class__(self.scope, clause)
+    def clone(self):
+        instance = self.__class__(self.scope, self.clause)
         instance._order_by = self._order_by
         instance.descending = self.descending
         instance.pagination_key = self.pagination_key
         instance.best_effort_limit = self.best_effort_limit
+        return instance
+
+    def filter(self, *clauses):
+        instance = self.clone()
+        instance.clause = AndClause(instance.clause, *clauses)
         return instance
 
     def request(self):

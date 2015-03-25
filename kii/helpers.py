@@ -60,6 +60,9 @@ class RequestHelper:
             access_token=self.access_token,
         )
 
+    def clone(self):
+        return self.__class__(self.api)
+
 
 class BucketsHelper(RequestHelper):
     def __init__(self, scope):
@@ -85,3 +88,6 @@ class BucketsHelper(RequestHelper):
     @property
     def token_type(self):
         return self.api.token_type
+
+    def clone(self):
+        return self.__class__(self.scope)
