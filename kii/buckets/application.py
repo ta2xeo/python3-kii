@@ -223,6 +223,7 @@ class QueryForObjects(BucketsHelper):
         self.descending = descending
         self.pagination_key = pagination_key
         self.best_effort_limit = best_effort_limit
+        self._offset = None
 
     @property
     def api_path(self):
@@ -286,6 +287,8 @@ class QueryForObjects(BucketsHelper):
             params['paginationKey'] = self.pagination_key
 
         if self.best_effort_limit:
+            if self._offset:
+                self.best_effort_limit += self._offset
             params['bestEffortLimit'] = self.best_effort_limit
 
         return params
@@ -294,9 +297,10 @@ class QueryForObjects(BucketsHelper):
         return self.request()
 
     def first(self):
+        results = self.request()
         try:
-            return self.one()
-        except KiiObjectNotFoundError:
+            return results[0]
+        except IndexError:
             return None
 
     def one(self):
@@ -307,6 +311,10 @@ class QueryForObjects(BucketsHelper):
             return results[0]
         except IndexError as e:
             raise KiiObjectNotFoundError from e
+
+    def offset(self, offset):
+        self._offset = offset
+        return self
 
     def limit(self, limit):
         self.best_effort_limit = limit

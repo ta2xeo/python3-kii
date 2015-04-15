@@ -103,7 +103,6 @@ class ObjectResult(BaseResult):
         scope = self.request_helper.scope
         return scope.retrieve_an_object_body(self._id, **kwargs)
 
-
     def add_or_replace_body(self, body, content_type):
         scope = self.request_helper.scope
         return scope.add_or_replace_an_object_body(self._id, body, content_type)
@@ -250,12 +249,19 @@ class QueryResult(BaseResult):
     def set_result(self, result):
         self._items = []
         if isinstance(result['results'], list):
-            self._items.extend([ObjectResult(self.request_helper, self.response).set_result(r) for r in result['results']])
+            self._items.extend([
+                ObjectResult(self.request_helper,
+                             self.response).set_result(r) for r in result['results']
+            ])
         else:
-            self._items.append(ObjectResult(self.request_helper, self.response).set_result(result['results']))
+            self._items.append(ObjectResult(self.request_helper,
+                                            self.response).set_result(result['results']))
 
         self.next_pagination_key = result.get('nextPaginationKey', None)
         self.query_description = result.get('queryDescription', None)
+
+        offset = self.request_helper._offset
+        self.request_helper._offset = None
 
         if self.next_pagination_key:
             helper = self.request_helper.clone()
@@ -268,6 +274,9 @@ class QueryResult(BaseResult):
                 self.next_pagination_key = result.next_pagination_key
                 self.query_description = result.query_description
                 self._items.extend(list(result))
+
+        if offset:
+            self._items = self._items[offset:]
 
 
 class TokenResult(BaseResult):
