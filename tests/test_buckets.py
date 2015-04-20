@@ -556,6 +556,34 @@ class TestApplicationQuery:
         for i in range(cls.OBJ_COUNT):
             assert results[i]['index'] == i
 
+    def test_query_offset(self):
+        cls = TestApplicationQuery
+        bucket = cls.scope(BUCKET_ID)
+
+        query = bucket.query().limit(3)
+        results = query.all()
+        assert len(results) == 3
+        for i, r in enumerate(results):
+            assert r['index'] == i
+
+        query = query.offset(3)
+        results = query.all()
+        assert len(results) == 3
+        for i, r in enumerate(results):
+            assert r['index'] == i + 3
+
+        query = query.offset(6)
+        results = query.all()
+        assert len(results) == 3
+        for i, r in enumerate(results):
+            assert r['index'] == i + 6
+
+        query = query.offset(cls.OBJ_COUNT - 2)
+        results = query.all()
+        assert len(results) == 2
+        for i, r in enumerate(results):
+            assert r['index'] == i + cls.OBJ_COUNT - 2
+
 
 class TestApplicationObjectBody:
     @classmethod

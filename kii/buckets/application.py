@@ -222,7 +222,7 @@ class QueryForObjects(BucketsHelper):
         self.descending = descending
         self.pagination_key = pagination_key
         self.best_effort_limit = best_effort_limit
-        self._offset = None
+        self._offset = 0
 
     @property
     def api_path(self):
@@ -253,6 +253,7 @@ class QueryForObjects(BucketsHelper):
         instance.descending = self.descending
         instance.pagination_key = self.pagination_key
         instance.best_effort_limit = self.best_effort_limit
+        instance._offset = self._offset
         return instance
 
     def filter(self, *clauses):
@@ -286,9 +287,7 @@ class QueryForObjects(BucketsHelper):
             params['paginationKey'] = self.pagination_key
 
         if self.best_effort_limit:
-            if self._offset:
-                self.best_effort_limit += self._offset
-            params['bestEffortLimit'] = self.best_effort_limit
+            params['bestEffortLimit'] = self.best_effort_limit + self._offset
 
         return params
 

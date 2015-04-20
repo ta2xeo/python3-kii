@@ -262,13 +262,14 @@ class QueryResult(BaseResult):
         self.query_description = result.get('queryDescription', None)
 
         offset = self.request_helper._offset
-        self.request_helper._offset = None
 
         if self.next_pagination_key:
             helper = self.request_helper.clone()
             helper.pagination_key = self.next_pagination_key
             if helper.best_effort_limit is not None:
-                helper.best_effort_limit -= len(self)
+                size = len(self)
+                helper.best_effort_limit -= size
+                helper._offset -= size
 
             if helper.best_effort_limit is None or helper.best_effort_limit > 0:
                 result = helper.request()
