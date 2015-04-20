@@ -1,11 +1,7 @@
 import logging
 import requests
 
-from kii.exceptions import (
-    KiiAPIError,
-    KiiHasNotAccessTokenError,
-)
-from kii.results import *
+from kii.exceptions import KiiAPIError, KiiHasNotAccessTokenError
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +24,8 @@ class RequestHelper:
         }
 
     def request(self, **kwargs):
-        logger.debug('METHOD:%s URL:%s HEADERS:%s KWARGS:%s', self.method, self.url, self.headers, kwargs)
+        logger.debug('METHOD:%s URL:%s HEADERS:%s KWARGS:%s',
+                     self.method, self.url, self.headers, kwargs)
         response = requests.request(self.method,
                                     self.url,
                                     headers=self.headers,

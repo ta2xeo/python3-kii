@@ -89,14 +89,11 @@ class KiiAPIError(Exception):
 # INTERNAL Errors
 class KiiInternvalAPIError(KiiAPIError):
     default_message = 'kii internal api error'
+
     def __init__(self, msg=None):
         if msg is None:
             msg = self.default_message
         super().__init__(msg)
-
-
-class KiiHasNotPropertyError(KiiInternvalAPIError):
-    default_message = 'object has not property'
 
 
 class KiiHasNotAccessTokenError(KiiInternvalAPIError):

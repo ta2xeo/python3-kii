@@ -1,9 +1,9 @@
-from configparser import ConfigParser
-from datetime import datetime, timedelta
 import os
+import os.path
+from configparser import ConfigParser
 
 from kii import KiiAPI, KiiAdminAPI
-from kii.exceptions import *
+from kii import exceptions as exc
 
 
 def get_env():
@@ -32,11 +32,12 @@ def get_api_with_test_user():
 
 def get_admin_api():
     env = get_env()
-    api = KiiAdminAPI(env['kii_info']['app_id'],
-                 env['kii_info']['app_key'],
-                 env['kii_info']['client_id'],
-                 env['kii_info']['client_secret'],
-                 region=env['location']['region'])
+    api = KiiAdminAPI(
+        env['kii_info']['app_id'],
+        env['kii_info']['app_key'],
+        env['kii_info']['client_id'],
+        env['kii_info']['client_secret'],
+        region=env['location']['region'])
     return api
 
 
@@ -51,7 +52,7 @@ def clean_up_of_user():
                                 test_user['password'])
         # delete user, if already exists
         api.with_access_token(token).users.delete_a_user()
-    except KiiInvalidGrantError:
+    except exc.KiiInvalidGrantError:
         pass
 
 
@@ -65,8 +66,7 @@ def get_test_user():
     user = api.users.create_a_user_and_obtain_access_token(login_name=test_user['login_name'],
                                                            password=test_user['password'],
                                                            email_address=test_user['email'],
-                                                           phone_number=test_user['phone'],
-    )
+                                                           phone_number=test_user['phone'])
     return user
 
 

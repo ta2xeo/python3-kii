@@ -4,13 +4,7 @@ from kii.buckets.application import (
     DeleteABucket as BaseDeleteABucket,
     CreateAnObject as BaseCreateAnObject,
 )
-from kii.exceptions import (
-    KiiIllegalAccessError,
-)
-from kii.users import (
-    AccountType,
-    AccountTypeMixin,
-)
+from kii.users import AccountTypeMixin
 
 
 class AbstractManageMixin:
@@ -119,7 +113,8 @@ class ManageObjectsMixin(AbstractManageMixin):
 class CreateAnObject(ManageObjectsMixin, BaseCreateAnObject):
     def paths(self):
         return {
-            self.by_address: '/apps/{appID}/users/{accountType}:{address}/buckets/{bucketID}/objects',
+            self.by_address:
+            '/apps/{appID}/users/{accountType}:{address}/buckets/{bucketID}/objects',
             self.by_id: '/apps/{appID}/users/{userID}/buckets/{bucketID}/objects',
             self.by_me_literal: '/apps/{appID}/users/me/buckets/{bucketID}/objects',
         }

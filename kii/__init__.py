@@ -1,8 +1,4 @@
 # package
-from kii import exceptions
-from kii.api import (
-    KiiAPI,
-    KiiAdminAPI,
-)
-from kii.buckets.clauses import *
-from kii.users import AccountType
+from kii.api import KiiAPI, KiiAdminAPI  # NOQA
+from kii.buckets import *  # NOQA
+from kii.users import AccountType  # NOQA

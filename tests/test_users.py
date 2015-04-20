@@ -2,8 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from kii.exceptions import *
-from kii.results import *
+from kii import exceptions as exc, results as rs
 
 from conf import get_env, get_api, clean_up_of_user as cleanup
 
@@ -26,16 +25,16 @@ class TestUsersResult:
         env = get_env()
         test_user = env['test_user']
 
-        with pytest.raises(KiiPasswordTooShortError):
+        with pytest.raises(exc.KiiPasswordTooShortError):
             user = api.users.create_a_user()
 
-        with pytest.raises(KiiInvalidInputDataError):
+        with pytest.raises(exc.KiiInvalidInputDataError):
             user = api.users.create_a_user(password=test_user['password'])
 
         user = api.users.create_a_user(login_name=test_user['login_name'],
                                        password=test_user['password'])
 
-        assert isinstance(user, UserResult)
+        assert isinstance(user, rs.UserResult)
 
         # disabled
         assert isinstance(user._disabled, bool)
@@ -78,18 +77,19 @@ class TestUsers:
         env = get_env()
         test_user = env['test_user']
 
-        with pytest.raises(KiiPasswordTooShortError):
-            user = api.users.create_a_user()
+        with pytest.raises(exc.KiiPasswordTooShortError):
+            api.users.create_a_user()
 
-        with pytest.raises(KiiInvalidInputDataError):
-            user = api.users.create_a_user(password=test_user['password'])
+        with pytest.raises(exc.KiiInvalidInputDataError):
+            api.users.create_a_user(password=test_user['password'])
 
         user = api.users.create_a_user(login_name=test_user['login_name'],
                                        password=test_user['password'])
+        assert user
 
-        with pytest.raises(KiiUserAlreadyExistsError):
-            user = api.users.create_a_user(login_name=test_user['login_name'],
-                                           password=test_user['password'])
+        with pytest.raises(exc.KiiUserAlreadyExistsError):
+            api.users.create_a_user(login_name=test_user['login_name'],
+                                    password=test_user['password'])
 
     def test_create_user2(self):
         api = get_api()
@@ -99,7 +99,7 @@ class TestUsers:
         user = api.users.create_a_user(login_name=test_user['login_name'],
                                        password=test_user['password'])
 
-        with pytest.raises(KiiHasNotPropertyError):
+        with pytest.raises(exc.KiiHasNotPropertyError):
             user.country
 
         cleanup()
@@ -128,7 +128,7 @@ class TestUsers:
         user = api.users.create_a_user(login_name=test_user['login_name'],
                                        password=test_user['password'])
 
-        with pytest.raises(KiiUserHasNotAccessTokenError):
+        with pytest.raises(exc.KiiUserHasNotAccessTokenError):
             user.delete()
 
         cleanup()
@@ -138,7 +138,7 @@ class TestUsers:
 
         user.delete()
 
-        with pytest.raises(KiiWrongTokenError):
+        with pytest.raises(exc.KiiWrongTokenError):
             user.delete()
 
     def test_login_user(self):
@@ -160,6 +160,8 @@ class TestUsers:
         # specify
         EXPIRE_SEC = 5
         expire = datetime.now() + timedelta(seconds=EXPIRE_SEC)
-        new_token2 = api.users.login(test_user['login_name'], test_user['password'], expires_at=expire)
+        new_token2 = api.users.login(test_user['login_name'],
+                                     test_user['password'],
+                                     expires_at=expire)
 
         assert new_token2.expires_in < (EXPIRE_SEC + 1)

@@ -1,14 +1,11 @@
 from datetime import datetime
-from enum import Enum
+from enum import Enum, unique
 
-from kii.exceptions import (
-    KiiIllegalAccessError,
-    KiiInvalidAccountTypeError,
-)
+from kii import exceptions as exc, results as rs
 from kii.helpers import RequestHelper
-from kii.results import *
 
 
+@unique
 class AccountType(Enum):
     email = 'EMAIL'
     phone = 'PHONE'
@@ -27,7 +24,8 @@ class AccountTypeMixin:
             try:
                 account_type = AccountType(account_type)
             except ValueError:
-                raise KiiInvalidAccountTypeError('account type "{0}" is invalid'.format(account_type))
+                raise exc.KiiInvalidAccountTypeError(
+                    'account type "{0}" is invalid'.format(account_type))
 
         self._account_type = account_type
 
@@ -40,7 +38,6 @@ class Users:
         helper = CreateAUser(self.api, **kwargs)
         result = helper.request()
         return result
-
 
     def create_a_user_and_obtain_access_token(self, **kwargs):
         helper = CreateAUserAndObtainAccessToken(self.api, **kwargs)
@@ -85,7 +82,7 @@ class Users:
 
 class CreateAUser(RequestHelper):
     method = 'POST'
-    result_container = UserResult
+    result_container = rs.UserResult
 
     def __init__(self, api,
                  login_name=None,
@@ -162,7 +159,7 @@ class CreateAUserAndObtainAccessToken(CreateAUser):
 
 class DeleteAUser(RequestHelper):
     method = 'DELETE'
-    result_container = BaseResult
+    result_container = rs.BaseResult
 
     def __init__(self, api, *, account_type=None, address=None, user_id=None):
         super().__init__(api)
@@ -187,7 +184,7 @@ class DeleteAUser(RequestHelper):
             )
 
         if isinstance(self.api, KiiAdminAPI):
-            raise KiiIllegalAccessError
+            raise exc.KiiIllegalAccessError
 
         return '/apps/{appID}/users/me'.format(appID=self.api.app_id)
 
@@ -202,12 +199,12 @@ class DeleteAUser(RequestHelper):
 
 class RetrieveUserData(DeleteAUser):
     method = 'GET'
-    result_container = UserResult
+    result_container = rs.UserResult
 
 
 class RequestANewToken(RequestHelper):
     method = 'POST'
-    result_container = TokenResult
+    result_container = rs.TokenResult
 
     def __init__(self, api,
                  *,
@@ -252,7 +249,7 @@ class RequestANewToken(RequestHelper):
 
         if self.expires_at is not None:
             if not isinstance(self.expires_at, datetime):
-                raise KiiInvalidExpirationError
+                raise exc.KiiInvalidExpirationError
 
             expire = int(self.expires_at.timestamp() * 1000)
             params['expiresAt'] = expire

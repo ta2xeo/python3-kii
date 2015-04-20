@@ -1,17 +1,10 @@
 # only python3.4 or later
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime
 
 from kii.buckets import Buckets
-from kii.exceptions import *
+from kii import exceptions as exc, results as rs
 from kii.groups import Groups
-from kii.helpers import *
-from kii.users import (
-    RequestANewToken,
-    Users,
-)
+from kii.users import RequestANewToken, Users
 
 
 KII_REST_API_BASE_URL = 'https://api{domain}.kii.com/api'
@@ -48,7 +41,7 @@ class KiiAPI:
 
     @access_token.setter
     def access_token(self, token):
-        if isinstance(token, TokenResult):
+        if isinstance(token, rs.TokenResult):
             self._access_token = token.access_token
             self.token_type = token.token_type
         else:
@@ -109,8 +102,8 @@ class KiiAdminAPI(KiiAPI):
                            self.client_id, self.client_secret, **base)
 
     def get_admin_token(self, expires_at=None):
-        if expires_at and not isinstanceis(expires_at, datetime):
-            raise KiiInvalidExpirationError
+        if expires_at and not isinstance(expires_at, datetime):
+            raise exc.KiiInvalidExpirationError
 
         req = RequestANewToken(self,
                                expires_at=expires_at,

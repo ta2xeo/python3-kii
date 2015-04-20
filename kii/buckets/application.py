@@ -7,9 +7,8 @@ from kii.buckets.clauses import (
     AllClause,
     AndClause,
 )
-from kii.exceptions import *
+from kii import exceptions as exc, results as rs
 from kii.helpers import BucketsHelper
-from kii.results import *
 
 
 # Manage Buckets
@@ -43,18 +42,18 @@ class ManageBuckets(BucketsHelper):
 
 class RetrieveABucket(ManageBuckets):
     method = 'GET'
-    result_container = BucketResult
+    result_container = rs.BucketResult
 
 
 class DeleteABucket(ManageBuckets):
     method = 'DELETE'
-    result_container = BaseResult
+    result_container = rs.BaseResult
 
 
 # Manage Objects
 class CreateAnObject(BucketsHelper):
     method = 'POST'
-    result_container = CreateResult
+    result_container = rs.CreateResult
 
     def __init__(self, scope, data):
         super().__init__(scope)
@@ -82,7 +81,7 @@ class CreateAnObject(BucketsHelper):
 
 class RetrieveAnObject(BucketsHelper):
     method = 'GET'
-    result_container = ObjectResult
+    result_container = rs.ObjectResult
 
     def __init__(self, scope, object_id):
         super().__init__(scope)
@@ -104,7 +103,7 @@ class RetrieveAnObject(BucketsHelper):
 
 class FullyUpdateAnObject(BucketsHelper):
     method = 'PUT'
-    result_container = UpdateResult
+    result_container = rs.UpdateResult
 
     def __init__(self, scope, object_id, data, *, if_match=None, if_none_match=None):
         super().__init__(scope)
@@ -169,7 +168,7 @@ class PartiallyUpdateAnObject(FullyUpdateAnObject):
 
 class DeleteAnObject(BucketsHelper):
     method = 'DELETE'
-    result_container = DeleteResult
+    result_container = rs.DeleteResult
 
     def __init__(self, scope, object_id, *, if_match=None, if_none_match=None):
         super().__init__(scope)
@@ -203,7 +202,7 @@ class DeleteAnObject(BucketsHelper):
 
 class QueryForObjects(BucketsHelper):
     method = 'POST'
-    result_container = QueryResult
+    result_container = rs.QueryResult
 
     def __init__(self, scope,
                  clause=None,
@@ -244,7 +243,7 @@ class QueryForObjects(BucketsHelper):
     @clause.setter
     def clause(self, clause):
         if not isinstance(clause, Clause):
-            raise KiiInvalidClauseError
+            raise exc.KiiInvalidClauseError
 
         self._clause = clause
 
@@ -306,11 +305,11 @@ class QueryForObjects(BucketsHelper):
     def one(self):
         results = self.request()
         if len(results) > 1:
-            raise KiiMultipleResultsFoundError
+            raise exc.KiiMultipleResultsFoundError
         try:
             return results[0]
         except IndexError as e:
-            raise KiiObjectNotFoundError from e
+            raise exc.KiiObjectNotFoundError from e
 
     def offset(self, offset):
         self._offset = offset
@@ -343,7 +342,7 @@ Query Request:
 
 class RetrieveAnObjectBody(BucketsHelper):
     method = 'GET'
-    result_container = BodyResult
+    result_container = rs.BodyResult
 
     def __init__(self, scope, object_id, *,
                  if_match=None,
@@ -354,7 +353,7 @@ class RetrieveAnObjectBody(BucketsHelper):
 
         # range is tuple or list. e.g.) [begin, end]
         if range is not None and not isinstance(range, (list, tuple)):
-            raise KiiInvalidTypeError
+            raise exc.KiiInvalidTypeError
 
         self.range = range
 
@@ -384,7 +383,7 @@ class RetrieveAnObjectBody(BucketsHelper):
 
 class AddOrReplaceAnObjectBody(BucketsHelper):
     method = 'PUT'
-    result_container = BaseResult
+    result_container = rs.BaseResult
 
     def __init__(self, scope, object_id, body, content_type, *,
                  if_match=None, if_none_match=None):
@@ -424,7 +423,7 @@ class AddOrReplaceAnObjectBody(BucketsHelper):
 
 class VerifyTheObjectBodyExistence(BucketsHelper):
     method = 'HEAD'
-    result_container = ObjectResult
+    result_container = rs.ObjectResult
 
     def __init__(self, scope, object_id):
         super().__init__(scope)
@@ -449,7 +448,7 @@ class VerifyTheObjectBodyExistence(BucketsHelper):
 
 class DeleteAnObjectBody(BucketsHelper):
     method = 'DELETE'
-    result_container = ObjectResult
+    result_container = rs.ObjectResult
 
     def __init__(self, scope, object_id):
         super().__init__(scope)
@@ -474,7 +473,7 @@ class DeleteAnObjectBody(BucketsHelper):
 
 class PublishAnObjectBody(BucketsHelper):
     method = 'POST'
-    result_container = PublishBodyResult
+    result_container = rs.PublishBodyResult
 
     def __init__(self, scope, object_id, *,
                  expires_at=None, expires_in=None):
@@ -512,7 +511,7 @@ class PublishAnObjectBody(BucketsHelper):
 
         if self.expires_at is not None:
             if not isinstance(self.expires_at, datetime):
-                raise KiiInvalidExpirationError
+                raise exc.KiiInvalidExpirationError
 
             expire = int(self.expires_at.timestamp() * 1000)
 

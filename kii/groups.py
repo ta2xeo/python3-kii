@@ -1,8 +1,5 @@
-from datetime import datetime
-
-from kii.exceptions import KiiIllegalAccessError
+from kii import results as rs
 from kii.helpers import RequestHelper
-from kii.results import *
 
 
 class Groups:
@@ -27,7 +24,7 @@ class Groups:
 
 class CreateAGroup(RequestHelper):
     method = 'POST'
-    result_container = GroupCreationResult
+    result_container = rs.GroupCreationResult
 
     def __init__(self, api,
                  name,
@@ -65,7 +62,7 @@ class CreateAGroup(RequestHelper):
 
 class GetTheGroupInformation(RequestHelper):
     method = 'GET'
-    result_container = GroupInformationResult
+    result_container = rs.GroupInformationResult
 
     def __init__(self, api, group_id):
         super().__init__(api)
@@ -89,7 +86,7 @@ class GetTheGroupInformation(RequestHelper):
 
 class DeleteAGroup(RequestHelper):
     method = 'DELETE'
-    result_container = BaseResult
+    result_container = rs.BaseResult
 
     def __init__(self, api, group_id):
         super().__init__(api)

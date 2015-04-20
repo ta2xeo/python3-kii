@@ -1,11 +1,8 @@
-from datetime import datetime, timedelta
-
 import pytest
 
-from kii.exceptions import *
-from kii.results import *
+from kii import exceptions as exc
 
-from conf import get_env, get_api, cleanup, get_test_user, get_admin_api
+from conf import get_api, cleanup, get_test_user
 
 
 TEST_GROUP_NAME = 'test_group'
@@ -26,32 +23,32 @@ class TestGroups:
 
     def test_create_group_failed(self):
         api = get_api()
-        env = get_env()
 
-        with pytest.raises(KiiHasNotAccessTokenError):
-            new_group = api.groups.create_a_group(TEST_GROUP_NAME, 'dummy')
+        with pytest.raises(exc.KiiHasNotAccessTokenError):
+            api.groups.create_a_group(TEST_GROUP_NAME, 'dummy')
 
         user = get_test_user()
-        with pytest.raises(KiiUserNotFoundError):
-            new_group = api.with_access_token(user.access_token).groups.create_a_group(TEST_GROUP_NAME, '_not_exists_user')
+        with pytest.raises(exc.KiiUserNotFoundError):
+            api.with_access_token(user.access_token) \
+               .groups.create_a_group(TEST_GROUP_NAME, '_not_exists_user')
 
     def test_create_group(self):
         api = get_api()
-        env = get_env()
 
         user = get_test_user()
-        new_group = api.with_access_token(user.access_token).groups.create_a_group(TEST_GROUP_NAME, user.user_id)
+        new_group = api.with_access_token(user.access_token) \
+                       .groups.create_a_group(TEST_GROUP_NAME, user.user_id)
 
-        group = api.groups.delete_a_group(new_group.group_id)
+        api.groups.delete_a_group(new_group.group_id)
 
     def test_delete_group(self):
         api = get_api()
-        env = get_env()
 
         user = get_test_user()
-        new_group = api.with_access_token(user.access_token).groups.create_a_group(TEST_GROUP_NAME, user.user_id)
+        new_group = api.with_access_token(user.access_token) \
+                       .groups.create_a_group(TEST_GROUP_NAME, user.user_id)
 
-        group = api.groups.delete_a_group(new_group.group_id)
+        api.groups.delete_a_group(new_group.group_id)
 
-        with pytest.raises(KiiGroupNotFoundError):
+        with pytest.raises(exc.KiiGroupNotFoundError):
             api.groups.delete_a_group('unknown group id')

@@ -8,18 +8,13 @@ import time
 import pytest
 import requests
 
-from kii import AccountType
-from kii.buckets.clauses import *
-from kii.exceptions import *
-from kii.results import *
+from kii import AccountType, exceptions as exc, results as rs
+from kii.buckets import BucketType, clauses as cl
 
 from conf import (
     get_env,
-    get_api,
     get_api_with_test_user,
-    get_test_user,
     cleanup,
-    get_admin_api,
 )
 
 
@@ -42,7 +37,7 @@ class TestApplicationScopeBuckets:
         """
         try:
             self.scope.delete_a_bucket(BUCKET_ID)
-        except KiiBucketNotFoundError:
+        except exc.KiiBucketNotFoundError:
             pass
         cleanup()
 
@@ -55,11 +50,12 @@ class TestApplicationScopeBuckets:
             },
             'list key': [1, 2, 3],
         })
+        assert obj
 
         bucket = self.scope.retrieve_a_bucket(BUCKET_ID)
 
-        assert isinstance(bucket, BucketResult)
-        assert bucket.bucket_type == 'READ_WRITE'
+        assert isinstance(bucket, rs.BucketResult)
+        assert bucket.bucket_type is BucketType.READ_WRITE
         assert bucket.size > 0
 
     def test_delete_bucket(self):
@@ -71,9 +67,11 @@ class TestApplicationScopeBuckets:
             },
             'list key': [1, 2, 3],
         })
+        assert obj
+
         self.scope.delete_a_bucket(BUCKET_ID)
 
-        with pytest.raises(KiiBucketNotFoundError):
+        with pytest.raises(exc.KiiBucketNotFoundError):
             self.scope.delete_a_bucket(BUCKET_ID)
 
     def test_create_an_object(self):
@@ -86,7 +84,7 @@ class TestApplicationScopeBuckets:
             'list key': [1, 2, 3],
         })
 
-        assert isinstance(obj, CreateResult)
+        assert isinstance(obj, rs.CreateResult)
         assert obj.object_id
         assert obj.created_at
         assert isinstance(obj.created_at, datetime)
@@ -105,7 +103,7 @@ class TestApplicationScopeBuckets:
 
         result = self.scope(BUCKET_ID).retrieve_an_object(obj.object_id)
 
-        assert isinstance(result, ObjectResult)
+        assert isinstance(result, rs.ObjectResult)
         assert result._id
         assert isinstance(result._id, str)
         assert result._created
@@ -161,7 +159,6 @@ class TestApplicationScopeBuckets:
         assert created._created == updated._created
         assert created._modified != updated._modified
         assert created._version != updated._version
-
 
     def test_create_a_new_object_with_an_id(self):
         bucket = self.scope(BUCKET_ID)
@@ -290,13 +287,12 @@ class TestApplicationScopeBuckets:
         }
         assert created['list key'] == [1, 2, 3]
 
-
-        deleted = bucket.delete_an_object(obj.object_id)
+        bucket.delete_an_object(obj.object_id)
 
         info = self.scope.retrieve_a_bucket(BUCKET_ID)
         assert info.size == 0
 
-        with pytest.raises(KiiObjectNotFoundError):
+        with pytest.raises(exc.KiiObjectNotFoundError):
             obj = bucket.retrieve_an_object(obj.object_id)
 
     def test_query_for_objects(self):
@@ -316,59 +312,71 @@ class TestApplicationScopeBuckets:
         assert len(results) == OBJ_COUNT
 
         # equal
-        results = bucket.query_for_objects(Clause.eq('index', 3))
+        results = bucket.query_for_objects(cl.Clause.eq('index', 3))
         assert len(results) == 1
         assert results[0]['index'] == 3
         assert results[0]['desc'] == 'An object number is 4.'
 
         # not
-        results = bucket.query_for_objects(Clause.not_(Clause.eq('index', 2)))
+        results = bucket.query_for_objects(cl.Clause.not_(cl.Clause.eq('index', 2)))
         assert len(results) == OBJ_COUNT - 1
         for r in results:
             assert r['index'] != 2
 
         # prefix
-        results = bucket.query_for_objects(Clause.prefix('name', 'tes'))
+        results = bucket.query_for_objects(cl.Clause.prefix('name', 'tes'))
         assert len(results) == OBJ_COUNT
 
         # range
-        results = bucket.query_for_objects(RangeClause('index').le(2))
+        results = bucket.query_for_objects(cl.RangeClause('index').le(2))
         assert len(results) == 3
 
-        results = bucket.query_for_objects(RangeClause('index').lt(2))
+        results = bucket.query_for_objects(cl.RangeClause('index').lt(2))
         assert len(results) == 2
 
-        results = bucket.query_for_objects(RangeClause('index').ge(2))
+        results = bucket.query_for_objects(cl.RangeClause('index').ge(2))
         assert len(results) == OBJ_COUNT - 2
 
-        results = bucket.query_for_objects(RangeClause('index').gt(2))
+        results = bucket.query_for_objects(cl.RangeClause('index').gt(2))
         assert len(results) == OBJ_COUNT - 3
 
         # in
-        results = bucket.query_for_objects(Clause.in_('index', [1, 3, 4]))
+        results = bucket.query_for_objects(cl.Clause.in_('index', [1, 3, 4]))
         assert len(results) == 3
         for r in results:
             assert r['index'] in [1, 3, 4]
 
         # has
-        results = bucket.query_for_objects(HasFieldClause('index', 'INTEGER'))
+        results = bucket.query_for_objects(cl.HasFieldClause('index', 'INTEGER'))
         assert len(results) == OBJ_COUNT
 
-        results = bucket.query_for_objects(HasFieldClause('index', 'STRING'))
+        results = bucket.query_for_objects(cl.HasFieldClause('index', 'STRING'))
         assert len(results) == 0
 
-        results = bucket.query_for_objects(HasFieldClause('index', HasFieldClause.Types.integer))
+        results = bucket.query_for_objects(
+            cl.HasFieldClause('index', cl.HasFieldClause.Types.integer))
         assert len(results) == OBJ_COUNT
 
-        results = bucket.query_for_objects(HasFieldClause('index', HasFieldClause.Types.string))
+        results = bucket.query_for_objects(
+            cl.HasFieldClause('index', cl.HasFieldClause.Types.string))
         assert len(results) == 0
 
         # and
-        results = bucket.query_for_objects(AndClause(Clause.eq('even', True), RangeClause('index').le(6)))
+        results = bucket.query_for_objects(
+            cl.AndClause(
+                cl.Clause.eq('even', True),
+                cl.RangeClause('index').le(6)
+            )
+        )
         assert len(results) == 6 // 2 + 1
 
         # or
-        results = bucket.query_for_objects(OrClause(Clause.eq('even', True), RangeClause('index').le(6)))
+        results = bucket.query_for_objects(
+            cl.OrClause(
+                cl.Clause.eq('even', True),
+                cl.RangeClause('index').le(6)
+            )
+        )
         assert len(results) == 6 + (OBJ_COUNT - 6) // 2
 
         # order_by, descending
@@ -406,7 +414,8 @@ class TestApplicationScopeBuckets:
         results = bucket.query_for_objects(best_effort_limit=3)
         assert len(results) == 3
 
-        results = bucket.query_for_objects(best_effort_limit=3, pagination_key=results.next_pagination_key)
+        results = bucket.query_for_objects(best_effort_limit=3,
+                                           pagination_key=results.next_pagination_key)
         assert len(results) == 3
 
         results = bucket.query_for_objects(pagination_key=results.next_pagination_key)
@@ -458,7 +467,7 @@ class TestApplicationQuery:
         """
         try:
             cls.scope.delete_a_bucket(BUCKET_ID)
-        except KiiBucketNotFoundError:
+        except exc.KiiBucketNotFoundError:
             pass
         cleanup()
 
@@ -480,16 +489,16 @@ class TestApplicationQuery:
         results = bucket.query().all()
         assert len(results) == cls.OBJ_COUNT
 
-        results = bucket.query(RangeClause('index').lt(4)).all()
+        results = bucket.query(cl.RangeClause('index').lt(4)).all()
         assert len(results) == 4
 
         results = bucket.query(
-            RangeClause('index').lt(8),
-            EqualClause('even', False),
+            cl.RangeClause('index').lt(8),
+            cl.EqualClause('even', False),
         ).all()
         assert len(results) == 4
 
-        results = bucket.query(EqualClause('index', -1)).all()
+        results = bucket.query(cl.EqualClause('index', -1)).all()
         assert len(results) == 0
 
     def test_query_one(self):
@@ -497,32 +506,32 @@ class TestApplicationQuery:
         bucket = cls.scope(BUCKET_ID)
 
         # one
-        result = bucket.query(EqualClause('index', 1)).one()
-        assert isinstance(result, ObjectResult)
+        result = bucket.query(cl.EqualClause('index', 1)).one()
+        assert isinstance(result, rs.ObjectResult)
         assert result._created
         assert result._modified
         assert result._owner
         assert result._version == 1
 
-        with pytest.raises(KiiMultipleResultsFoundError):
-            bucket.query(EqualClause('name', 'test user')).one()
+        with pytest.raises(exc.KiiMultipleResultsFoundError):
+            bucket.query(cl.EqualClause('name', 'test user')).one()
 
-        with pytest.raises(KiiObjectNotFoundError):
-            bucket.query(EqualClause('name', 'unknown')).one()
+        with pytest.raises(exc.KiiObjectNotFoundError):
+            bucket.query(cl.EqualClause('name', 'unknown')).one()
 
     def test_query_first(self):
         cls = TestApplicationQuery
         bucket = cls.scope(BUCKET_ID)
 
         # first
-        result = bucket.query(EqualClause('index', 1)).first()
-        assert isinstance(result, ObjectResult)
+        result = bucket.query(cl.EqualClause('index', 1)).first()
+        assert isinstance(result, rs.ObjectResult)
         assert result._created
         assert result._modified
         assert result._owner
         assert result._version == 1
 
-        result = bucket.query(EqualClause('index', -1)).first()
+        result = bucket.query(cl.EqualClause('index', -1)).first()
         assert result is None
 
     def test_query_limit(self):
@@ -575,7 +584,7 @@ class TestApplicationObjectBody:
         """
         try:
             cls.scope.delete_a_bucket(BUCKET_ID)
-        except KiiBucketNotFoundError:
+        except exc.KiiBucketNotFoundError:
             pass
         cleanup()
 
@@ -593,7 +602,7 @@ class TestApplicationObjectBody:
         obj = bucket.query().one()
         try:
             bucket.delete_an_object_body(obj._id)
-        except KiiObjectBodyNotFoundError:
+        except exc.KiiObjectBodyNotFoundError:
             pass
 
     def test_retrieve_an_object_body(self):
@@ -602,11 +611,12 @@ class TestApplicationObjectBody:
 
         obj = bucket.query().one()
 
-        with pytest.raises(KiiObjectBodyNotFoundError):
+        with pytest.raises(exc.KiiObjectBodyNotFoundError):
             bucket.retrieve_an_object_body(obj._id)
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         body_result = bucket.retrieve_an_object_body(obj._id)
         assert body_result.body == body.encode('utf-8')
@@ -625,6 +635,7 @@ class TestApplicationObjectBody:
 
         body = '0123456789'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         body_result = bucket.retrieve_an_object_body(obj._id)
         assert body_result.body == body.encode('utf-8')
@@ -635,11 +646,12 @@ class TestApplicationObjectBody:
 
         obj = bucket.query().one()
 
-        with pytest.raises(KiiObjectBodyNotFoundError):
+        with pytest.raises(exc.KiiObjectBodyNotFoundError):
             result = bucket.verify_the_object_body_existence(obj._id)
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         verified = bucket.verify_the_object_body_existence(obj._id)
         assert verified._result == ''
@@ -655,6 +667,7 @@ class TestApplicationObjectBody:
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         assert bucket.has_body(obj._id) is True
 
@@ -664,11 +677,12 @@ class TestApplicationObjectBody:
 
         obj = bucket.query().one()
 
-        with pytest.raises(KiiObjectBodyNotFoundError):
+        with pytest.raises(exc.KiiObjectBodyNotFoundError):
             result = bucket.verify_the_object_body_existence(obj._id)
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         verified = bucket.verify_the_object_body_existence(obj._id)
         assert verified._result == ''
@@ -682,18 +696,18 @@ class TestApplicationObjectBody:
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         body_result = bucket.retrieve_an_object_body(obj._id)
         assert body_result.body == body.encode('utf-8')
 
-        deleted = bucket.delete_an_object_body(obj._id)
+        bucket.delete_an_object_body(obj._id)
 
-        with pytest.raises(KiiObjectBodyNotFoundError):
+        with pytest.raises(exc.KiiObjectBodyNotFoundError):
             body_result = bucket.retrieve_an_object_body(obj._id)
 
-        with pytest.raises(KiiObjectBodyNotFoundError):
-            deleted = bucket.delete_an_object_body(obj._id)
-
+        with pytest.raises(exc.KiiObjectBodyNotFoundError):
+            bucket.delete_an_object_body(obj._id)
 
     def test_publish_an_object_body(self):
         cls = TestApplicationObjectBody
@@ -703,6 +717,7 @@ class TestApplicationObjectBody:
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         # no expiration
         published = bucket.publish_an_object_body(obj._id)
@@ -772,7 +787,7 @@ class TestUtilityMethods:
         """
         try:
             cls.scope.delete_a_bucket(BUCKET_ID)
-        except KiiBucketNotFoundError:
+        except exc.KiiBucketNotFoundError:
             pass
         cleanup()
 
@@ -790,7 +805,7 @@ class TestUtilityMethods:
         obj = bucket.query().one()
         try:
             bucket.delete_an_object_body(obj._id)
-        except KiiObjectBodyNotFoundError:
+        except exc.KiiObjectBodyNotFoundError:
             pass
 
     def test_refresh(self):
@@ -855,6 +870,7 @@ class TestUtilityMethods:
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = obj.add_or_replace_body(body, 'text/plain')
+        assert result
 
         added = bucket.retrieve_an_object_body(obj._id)
 
@@ -866,11 +882,12 @@ class TestUtilityMethods:
 
         obj = bucket.query().one()
 
-        with pytest.raises(KiiObjectBodyNotFoundError):
+        with pytest.raises(exc.KiiObjectBodyNotFoundError):
             result = bucket.verify_the_object_body_existence(obj._id)
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         verified = obj.verify_body()
         assert verified._result == ''
@@ -886,6 +903,7 @@ class TestUtilityMethods:
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         assert obj.has_body() is True
 
@@ -895,25 +913,12 @@ class TestUtilityMethods:
 
         obj = bucket.query().one()
 
-        with pytest.raises(KiiObjectBodyNotFoundError):
+        with pytest.raises(exc.KiiObjectBodyNotFoundError):
             obj.delete_body()
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
-
-        obj.delete_body()
-
-    def test_delete_body(self):
-        cls = TestUtilityMethods
-        bucket = cls.scope(BUCKET_ID)
-
-        obj = bucket.query().one()
-
-        with pytest.raises(KiiObjectBodyNotFoundError):
-            obj.delete_body()
-
-        body = 'abcdefghijklmnopqrstuvwxyz'
-        result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         obj.delete_body()
 
@@ -925,6 +930,7 @@ class TestUtilityMethods:
 
         body = 'abcdefghijklmnopqrstuvwxyz'
         result = bucket.add_or_replace_an_object_body(obj._id, body, 'text/plain')
+        assert result
 
         # no expiration
         published = obj.publish_body()
@@ -984,7 +990,7 @@ class TestGroupScopeBuckets:
         """
         try:
             self.scope.delete_a_bucket(self.group.group_id, BUCKET_ID)
-        except KiiBucketNotFoundError:
+        except exc.KiiBucketNotFoundError:
             pass
         cleanup()
 
@@ -998,7 +1004,7 @@ class TestGroupScopeBuckets:
             'list key': [1, 2, 3],
         })
 
-        assert isinstance(obj, CreateResult)
+        assert isinstance(obj, rs.CreateResult)
         assert obj.object_id
         assert obj.created_at
         assert isinstance(obj.created_at, datetime)
@@ -1014,11 +1020,12 @@ class TestGroupScopeBuckets:
             },
             'list key': [1, 2, 3],
         })
+        assert obj
 
         bucket = self.scope.retrieve_a_bucket(self.group.group_id, BUCKET_ID)
 
-        assert isinstance(bucket, BucketResult)
-        assert bucket.bucket_type == 'READ_WRITE'
+        assert isinstance(bucket, rs.BucketResult)
+        assert bucket.bucket_type is BucketType.READ_WRITE
         assert bucket.size > 0
 
     def test_delete_bucket(self):
@@ -1030,9 +1037,11 @@ class TestGroupScopeBuckets:
             },
             'list key': [1, 2, 3],
         })
+        assert obj
+
         self.scope.delete_a_bucket(self.group.group_id, BUCKET_ID)
 
-        with pytest.raises(KiiBucketNotFoundError):
+        with pytest.raises(exc.KiiBucketNotFoundError):
             self.scope.delete_a_bucket(self.group.group_id, BUCKET_ID)
 
 
@@ -1051,7 +1060,7 @@ class TestUserScopeBuckets:
         """
         try:
             self.scope.delete_a_bucket(BUCKET_ID)
-        except KiiBucketNotFoundError:
+        except exc.KiiBucketNotFoundError:
             pass
         cleanup()
 
@@ -1064,16 +1073,21 @@ class TestUserScopeBuckets:
             },
             'list key': [1, 2, 3],
         })
+        assert obj
 
         bucket = self.scope.retrieve_a_bucket(BUCKET_ID)
 
-        assert isinstance(bucket, BucketResult)
-        assert bucket.bucket_type == 'READ_WRITE'
+        assert isinstance(bucket, rs.BucketResult)
+        assert bucket.bucket_type is BucketType.READ_WRITE
         assert bucket.size > 0
 
     def test_retrieve_bucket_by_address(self):
         test_user = get_env()['test_user']
-        obj = self.scope(BUCKET_ID, account_type='EMAIL', address=test_user['email']).create_an_object({
+        obj = self.scope(
+            BUCKET_ID,
+            account_type='EMAIL',
+            address=test_user['email']
+        ).create_an_object({
             'int key': 1,
             'str key': 'this is string',
             'dict key': {
@@ -1081,29 +1095,38 @@ class TestUserScopeBuckets:
             },
             'list key': [1, 2, 3],
         })
+        assert obj
 
-        bucket = self.scope.retrieve_a_bucket(BUCKET_ID, account_type='EMAIL', address=test_user['email'])
+        bucket = self.scope.retrieve_a_bucket(BUCKET_ID,
+                                              account_type='EMAIL',
+                                              address=test_user['email'])
 
-        assert isinstance(bucket, BucketResult)
-        assert bucket.bucket_type == 'READ_WRITE'
+        assert isinstance(bucket, rs.BucketResult)
+        assert bucket.bucket_type is BucketType.READ_WRITE
         assert bucket.size > 0
 
-        bucket2 = self.scope.retrieve_a_bucket(BUCKET_ID, account_type=AccountType.email, address=test_user['email'])
+        bucket2 = self.scope.retrieve_a_bucket(BUCKET_ID,
+                                               account_type=AccountType.email,
+                                               address=test_user['email'])
 
-        assert isinstance(bucket2, BucketResult)
-        assert bucket2.bucket_type == 'READ_WRITE'
+        assert isinstance(bucket2, rs.BucketResult)
+        assert bucket2.bucket_type is BucketType.READ_WRITE
         assert bucket2.size > 0
 
-        bucket3 = self.scope.retrieve_a_bucket(BUCKET_ID, account_type='PHONE', address=test_user['phone'])
+        bucket3 = self.scope.retrieve_a_bucket(BUCKET_ID,
+                                               account_type='PHONE',
+                                               address=test_user['phone'])
 
-        assert isinstance(bucket3, BucketResult)
-        assert bucket3.bucket_type == 'READ_WRITE'
+        assert isinstance(bucket3, rs.BucketResult)
+        assert bucket3.bucket_type is BucketType.READ_WRITE
         assert bucket3.size > 0
 
-        bucket4 = self.scope.retrieve_a_bucket(BUCKET_ID, account_type=AccountType.phone, address=test_user['phone'])
+        bucket4 = self.scope.retrieve_a_bucket(BUCKET_ID,
+                                               account_type=AccountType.phone,
+                                               address=test_user['phone'])
 
-        assert isinstance(bucket4, BucketResult)
-        assert bucket4.bucket_type == 'READ_WRITE'
+        assert isinstance(bucket4, rs.BucketResult)
+        assert bucket4.bucket_type is BucketType.READ_WRITE
         assert bucket4.size > 0
 
     def test_retrieve_bucket_by_id(self):
@@ -1116,11 +1139,12 @@ class TestUserScopeBuckets:
             },
             'list key': [1, 2, 3],
         })
+        assert obj
 
         bucket = self.scope.retrieve_a_bucket(BUCKET_ID, user_id=test_user.user_id)
 
-        assert isinstance(bucket, BucketResult)
-        assert bucket.bucket_type == 'READ_WRITE'
+        assert isinstance(bucket, rs.BucketResult)
+        assert bucket.bucket_type is BucketType.READ_WRITE
         assert bucket.size > 0
 
     def test_delete_bucket(self):
@@ -1132,9 +1156,11 @@ class TestUserScopeBuckets:
             },
             'list key': [1, 2, 3],
         })
+        assert obj
+
         self.scope.delete_a_bucket(BUCKET_ID)
 
-        with pytest.raises(KiiBucketNotFoundError):
+        with pytest.raises(exc.KiiBucketNotFoundError):
             self.scope.delete_a_bucket(BUCKET_ID)
 
     def test_create_object_by_me(self):
@@ -1147,7 +1173,7 @@ class TestUserScopeBuckets:
             'list key': [1, 2, 3],
         })
 
-        assert isinstance(obj, CreateResult)
+        assert isinstance(obj, rs.CreateResult)
         assert obj.object_id
         assert obj.created_at
         assert isinstance(obj.created_at, datetime)
@@ -1156,7 +1182,11 @@ class TestUserScopeBuckets:
 
     def test_create_object_by_address(self):
         test_user = get_env()['test_user']
-        obj = self.scope(BUCKET_ID, account_type=AccountType.email, address=test_user['email']).create_an_object({
+        obj = self.scope(
+            BUCKET_ID,
+            account_type=AccountType.email,
+            address=test_user['email']
+        ).create_an_object({
             'int key': 1,
             'str key': 'this is string',
             'dict key': {
@@ -1165,7 +1195,7 @@ class TestUserScopeBuckets:
             'list key': [1, 2, 3],
         })
 
-        assert isinstance(obj, CreateResult)
+        assert isinstance(obj, rs.CreateResult)
         assert obj.object_id
         assert obj.created_at
         assert isinstance(obj.created_at, datetime)
@@ -1183,7 +1213,7 @@ class TestUserScopeBuckets:
             'list key': [1, 2, 3],
         })
 
-        assert isinstance(obj, CreateResult)
+        assert isinstance(obj, rs.CreateResult)
         assert obj.object_id
         assert obj.created_at
         assert isinstance(obj.created_at, datetime)

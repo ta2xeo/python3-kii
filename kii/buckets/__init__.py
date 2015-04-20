@@ -1,25 +1,21 @@
-from datetime import datetime
-from enum import Enum
+from enum import Enum, unique
 
+from kii import exceptions as exc
 from kii.buckets import (
     application as ApplicationScopeBucket,
     group as GroupScopeBucket,
     user as UserScopeBucket,
+    clauses,
 )
-from kii.buckets.clauses import (
-    Clause,
-    AndClause,
-)
-from kii.exceptions import *
-from kii.helpers import BucketsHelper
-from kii.results import *
-from kii.users import (
-    AccountType,
-    AccountTypeMixin,
-)
+from kii.users import AccountTypeMixin
 
 
 RESERVED_WORDS = ('users', 'devices', 'internal', 'things')
+
+
+@unique
+class BucketType(Enum):
+    READ_WRITE = 'rw'
 
 
 class Accessor:
@@ -30,7 +26,8 @@ class Accessor:
         try:
             return getattr(self.scope, name)
         except AttributeError as e:
-            raise KiiNotImplementedError('{0} is not implemented in {1} scope.'.format(name, self.scope)) from e
+            raise exc.KiiNotImplementedError(
+                '{0} is not implemented in {1} scope.'.format(name, self.scope)) from e
 
 
 class Buckets:
@@ -77,15 +74,15 @@ class Scope:
     def query_for_objects(self, clause=None, **kwargs):
         return self.request(self.scope.QueryForObjects, clause, **kwargs)
 
-    def query(self, *clauses):
+    def query(self, *clause):
         """
         SQLAlchemy like method
         """
-        argc = len(clauses)
+        argc = len(clause)
         if argc >= 2:
-            clause = AndClause(*clauses)
+            clause = clauses.AndClause(*clause)
         elif argc == 1:
-            clause = clauses[0]
+            clause = clause[0]
         else:
             clause = None
 
@@ -109,7 +106,7 @@ class Scope:
         try:
             self.verify_the_object_body_existence(object_id)
             return True
-        except KiiObjectBodyNotFoundError:
+        except exc.KiiObjectBodyNotFoundError:
             return False
 
     def delete_an_object_body(self, object_id):
@@ -129,10 +126,10 @@ class ApplicationScope(Scope):
 
     def __call__(self, bucket_id):
         if bucket_id in RESERVED_WORDS or bucket_id.startswith('_'):
-            raise KiiInvalidBucketIdError
+            raise exc.KiiInvalidBucketIdError
 
         if not bucket_id:
-            raise KiiInvalidBucketIdError
+            raise exc.KiiInvalidBucketIdError
 
         return ApplicationScope(self.api, self.scope, bucket_id)
 
@@ -156,13 +153,13 @@ class GroupScope(ApplicationScope):
 
     def __call__(self, group_id, bucket_id):
         if bucket_id in RESERVED_WORDS or bucket_id.startswith('_'):
-            raise KiiInvalidBucketIdError
+            raise exc.KiiInvalidBucketIdError
 
         if not group_id:
-            raise KiiInvalidGroupIdError
+            raise exc.KiiInvalidGroupIdError
 
         if not bucket_id:
-            raise KiiInvalidBucketIdError
+            raise exc.KiiInvalidBucketIdError
 
         return GroupScope(self.api, self.scope, group_id, bucket_id)
 
@@ -178,6 +175,7 @@ class GroupScope(ApplicationScope):
 
 
 class UserScope(AccountTypeMixin, ApplicationScope):
+    @unique
     class RequestType(Enum):
         by_address = 1
         by_id = 2
@@ -195,7 +193,7 @@ class UserScope(AccountTypeMixin, ApplicationScope):
     def __call__(self, bucket_id, *,
                  account_type=None, address=None, user_id=None):
         if bucket_id in RESERVED_WORDS or bucket_id.startswith('_'):
-            raise KiiInvalidBucketIdError
+            raise exc.KiiInvalidBucketIdError
 
         return UserScope(self.api, self.scope, bucket_id,
                          account_type=account_type, address=address, user_id=user_id)
@@ -220,7 +218,7 @@ class UserScope(AccountTypeMixin, ApplicationScope):
         else:
             # http://documentation.kii.com/en/guides/rest/admin-features/
             if isinstance(api, KiiAdminAPI):
-                raise KiiIllegalAccessError
+                raise exc.KiiIllegalAccessError
 
         return cls.RequestType.by_me_literal
 

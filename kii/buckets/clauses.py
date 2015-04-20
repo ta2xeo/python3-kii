@@ -1,8 +1,8 @@
 from copy import deepcopy
-from enum import Enum
+from enum import Enum, unique
 import json
 
-from kii.exceptions import *
+from kii import exceptions as exc
 
 
 class Clause:
@@ -52,7 +52,7 @@ class AndClause(Clause):
     def __init__(self, *clauses):
         for c in clauses:
             if not isinstance(c, Clause):
-                raise KiiInvalidClauseError
+                raise exc.KiiInvalidClauseError
 
         self.children = list(clauses)
 
@@ -61,7 +61,7 @@ class AndClause(Clause):
 
     def add(self, clause):
         if not isinstance(clause, Clause):
-            raise KiiInvalidClauseError
+            raise exc.KiiInvalidClauseError
 
         self.children.append(clause)
         return self
@@ -75,7 +75,7 @@ class AndClause(Clause):
 
 class EqualClause(Clause):
     def __init__(self, field, value):
-        self.field  = field
+        self.field = field
         self.value = value
 
     def query(self):
@@ -139,6 +139,7 @@ class GeoDistanceClause(Clause):
 
 
 class HasFieldClause(Clause):
+    @unique
     class Types(Enum):
         string = 'STRING'
         integer = 'INTEGER'
@@ -177,7 +178,7 @@ class InClause(Clause):
 class NotClause(Clause):
     def __init__(self, clause):
         if not isinstance(clause, Clause):
-            raise KiiInvalidClauseError
+            raise exc.KiiInvalidClauseError
 
         self.clause = clause
 

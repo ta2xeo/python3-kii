@@ -3,10 +3,7 @@ import json
 from collections.abc import MutableMapping
 from datetime import datetime
 
-from kii.exceptions import (
-    KiiHasNotPropertyError,
-    KiiUserHasNotAccessTokenError,
-)
+from kii.exceptions import KiiHasNotPropertyError, KiiUserHasNotAccessTokenError
 
 
 class BaseResult(MutableMapping):
@@ -38,8 +35,11 @@ class BaseResult(MutableMapping):
     def __bool__(self):
         return bool(self._result)
 
+    def __repr__(self):
+        return '{0} RESULTS {1}'.format(super().__repr__(), str(self))
+
     def __str__(self):
-        return '{0} RESULTS {1}'.format(repr(self), json.dumps(self.json()))
+        return json.dumps(self.json())
 
     @property
     def status_code(self):
@@ -129,7 +129,8 @@ class ObjectResult(BaseResult):
 class BucketResult(BaseResult):
     @property
     def bucket_type(self):
-        return self._result['bucketType']
+        from kii.buckets import BucketType
+        return BucketType(self._result['bucketType'])
 
     @property
     def bucketType(self):

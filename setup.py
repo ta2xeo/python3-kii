@@ -19,7 +19,7 @@ class PyTest(TestCommand):
         self.test_suite = True
 
     def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
+        # import here, cause outside the eggs aren't loaded
         import pytest
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
@@ -33,7 +33,7 @@ requires = [
 setup(name='python3-kii',
       version='0.2.2',
       description='A Python Library for Kii Cloud REST API',
-      classifiers = [
+      classifiers=[
           "Programming Language :: Python :: 3",
           "License :: OSI Approved :: MIT License",
       ],
@@ -46,5 +46,4 @@ setup(name='python3-kii',
       install_requires=requires,
       tests_require=requires + ['pytest'],
       test_suite='tests',
-      cmdclass={'test': PyTest},
-)
+      cmdclass={'test': PyTest})
