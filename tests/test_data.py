@@ -9,9 +9,9 @@ import pytest
 import requests
 
 from kii import AccountType, exceptions as exc, results as rs
-from kii.buckets import BucketType, clauses as cl
+from kii.data import BucketType, clauses as cl
 
-from conf import (
+from .conf import (
     get_env,
     get_api_with_test_user,
     cleanup,
@@ -22,14 +22,14 @@ GROUP_NAME = 'test_group'
 BUCKET_ID = 'test_bucket'
 
 
-class TestApplicationScopeBuckets:
+class TestApplicationScopeData:
     def setup_method(self, method):
         """ setup any state tied to the execution of the given method in a
         class.  setup_method is invoked for every test method of a class.
         """
         cleanup()
         self.api = get_api_with_test_user()
-        self.scope = self.api.buckets.application
+        self.scope = self.api.data.application
 
     def teardown_method(self, method):
         """ teardown any state that was previously setup with a setup_method
@@ -448,7 +448,7 @@ class TestApplicationQuery:
         """
         cleanup()
         cls.api = get_api_with_test_user()
-        cls.scope = cls.api.buckets.application
+        cls.scope = cls.api.data.application
         bucket = cls.scope(BUCKET_ID)
         cls.OBJ_COUNT = 20
         for i in range(cls.OBJ_COUNT):
@@ -593,7 +593,7 @@ class TestApplicationObjectBody:
         """
         cleanup()
         cls.api = get_api_with_test_user()
-        cls.scope = cls.api.buckets.application
+        cls.scope = cls.api.data.application
         bucket = cls.scope(BUCKET_ID)
         cls.OBJ_COUNT = 1
         for i in range(cls.OBJ_COUNT):
@@ -796,7 +796,7 @@ class TestUtilityMethods:
         """
         cleanup()
         cls.api = get_api_with_test_user()
-        cls.scope = cls.api.buckets.application
+        cls.scope = cls.api.data.application
         bucket = cls.scope(BUCKET_ID)
         cls.OBJ_COUNT = 1
         for i in range(cls.OBJ_COUNT):
@@ -1008,9 +1008,9 @@ class TestGroupScopeBuckets:
         """
         cleanup()
         self.api = get_api_with_test_user()
-        user = self.api.users.retrieve_user_data()
-        self.scope = self.api.buckets.group
-        self.group = self.api.groups.create_a_group(GROUP_NAME, user.user_id)
+        user = self.api.user.retrieve_user_data()
+        self.scope = self.api.data.group
+        self.group = self.api.group.create_a_group(GROUP_NAME, user.user_id)
 
     def teardown_method(self, method):
         """ teardown any state that was previously setup with a setup_method
@@ -1080,7 +1080,7 @@ class TestUserScopeBuckets:
         """
         cleanup()
         self.api = get_api_with_test_user()
-        self.scope = self.api.buckets.user
+        self.scope = self.api.data.user
 
     def teardown_method(self, method):
         """ teardown any state that was previously setup with a setup_method
@@ -1158,7 +1158,7 @@ class TestUserScopeBuckets:
         assert bucket4.size > 0
 
     def test_retrieve_bucket_by_id(self):
-        test_user = self.api.users.retrieve_user_data()
+        test_user = self.api.user.retrieve_user_data()
         obj = self.scope(BUCKET_ID, user_id=test_user.user_id).create_an_object({
             'int key': 1,
             'str key': 'this is string',
@@ -1231,7 +1231,7 @@ class TestUserScopeBuckets:
         assert obj.data_type == 'application/json'
 
     def test_create_object_by_id(self):
-        test_user = self.api.users.retrieve_user_data()
+        test_user = self.api.user.retrieve_user_data()
         obj = self.scope(BUCKET_ID, user_id=test_user.user_id).create_an_object({
             'int key': 1,
             'str key': 'this is string',

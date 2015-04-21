@@ -1,20 +1,20 @@
 # only python3.4 or later
 from datetime import datetime
+import warnings
 
-from kii.buckets import Buckets
 from kii import exceptions as exc, results as rs
-from kii.groups import Groups
-from kii.users import RequestANewToken, Users
+from kii.acl import AclManagement
+from kii.data import DataManagement
+from kii.enums import Site
+from kii.groups import GroupManagement
+from kii.users import RequestANewToken, UserManagement
+
+
+warnings.simplefilter('always')
 
 
 KII_REST_API_BASE_URL = 'https://api{domain}.kii.com/api'
-
-DOMAINS = {
-    'US': '',
-    'JP': '-jp',
-}
-
-DEFAULT_REGION = 'US'
+DEFAULT_REGION = Site.US
 
 
 class KiiAPI:
@@ -31,9 +31,29 @@ class KiiAPI:
         self.access_token = access_token
         self.region = region
 
-        self.users = Users(self)
-        self.groups = Groups(self)
-        self.buckets = Buckets(self)
+        self.user = UserManagement(self)
+        self.group = GroupManagement(self)
+        self.data = DataManagement(self)
+
+        self.acl = AclManagement(self)
+
+    @property
+    def users(self):
+        warnings.warn('users property deprecates in the near future. Use user property.',
+                      PendingDeprecationWarning)
+        return self.user
+
+    @property
+    def groups(self):
+        warnings.warn('groups property deprecates in the near future. Use group property.',
+                      PendingDeprecationWarning)
+        return self.group
+
+    @property
+    def buckets(self):
+        warnings.warn('buckets property deprecates in the near future. Use data property.',
+                      PendingDeprecationWarning)
+        return self.data
 
     @property
     def access_token(self):
@@ -46,6 +66,22 @@ class KiiAPI:
             self.token_type = token.token_type
         else:
             self._access_token = token
+
+    @property
+    def endpoint_url(self):
+        return KII_REST_API_BASE_URL.format(domain=self.region.value)
+
+    @property
+    def region(self):
+        return self._region
+
+    @region.setter
+    def region(self, site):
+        if not isinstance(site, Site):
+            warnings.warn('deprecated string code. Use Site enum object.',
+                          PendingDeprecationWarning)
+            site = Site[site.upper()]
+        self._region = site
 
     def with_access_token(self, access_token, token_type=None):
         '''
@@ -64,10 +100,6 @@ class KiiAPI:
         }
         base.update(kwargs)
         return KiiAPI(self.app_id, self.app_key, **base)
-
-    @property
-    def endpoint_url(self):
-        return KII_REST_API_BASE_URL.format(domain=DOMAINS[self.region.upper()])
 
 
 class KiiAdminAPI(KiiAPI):

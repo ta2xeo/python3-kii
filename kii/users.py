@@ -30,7 +30,7 @@ class AccountTypeMixin:
         self._account_type = account_type
 
 
-class Users:
+class UserManagement:
     def __init__(self, api):
         self.api = api
 

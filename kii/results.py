@@ -39,7 +39,7 @@ class BaseResult(MutableMapping):
         return '{0} RESULTS {1}'.format(super().__repr__(), str(self))
 
     def __str__(self):
-        return json.dumps(self.json())
+        return json.dumps(self._result)
 
     @property
     def status_code(self):
@@ -129,7 +129,7 @@ class ObjectResult(BaseResult):
 class BucketResult(BaseResult):
     @property
     def bucket_type(self):
-        from kii.buckets import BucketType
+        from kii.data import BucketType
         return BucketType(self._result['bucketType'])
 
     @property
@@ -438,7 +438,7 @@ class UserResult(BaseResult):
 
     def delete(self):
         api = self.api.clone(access_token=self.access_token)
-        api.users.delete_a_user()
+        api.user.delete_a_user()
 
 
 class GroupResult(BaseResult):

@@ -1,24 +1,25 @@
 # User Scope Bucket
-from kii.buckets.application import (
+from kii.data.application import (
     RetrieveABucket as BaseRetrieveABucket,
     DeleteABucket as BaseDeleteABucket,
     CreateAnObject as BaseCreateAnObject,
 )
+from kii.enums import UserRequestType
 from kii.users import AccountTypeMixin
 
 
 class AbstractManageMixin:
     @property
     def by_address(self):
-        return self.scope.RequestType.by_address
+        return UserRequestType.by_address
 
     @property
     def by_id(self):
-        return self.scope.RequestType.by_id
+        return UserRequestType.by_id
 
     @property
     def by_me_literal(self):
-        return self.scope.RequestType.by_me_literal
+        return UserRequestType.by_me_literal
 
     def format_args(self):
         def by_address():
@@ -51,12 +52,11 @@ class AbstractManageMixin:
 
 # Manage Buckets
 class ManageBucketsMixin(AbstractManageMixin, AccountTypeMixin):
-    def paths(self):
-        return {
-            self.by_address: '/apps/{appID}/users/{accountType}:{address}/buckets/{bucketID}',
-            self.by_id: '/apps/{appID}/users/{userID}/buckets/{bucketID}',
-            self.by_me_literal: '/apps/{appID}/users/me/buckets/{bucketID}',
-        }
+    paths = {
+        UserRequestType.by_address: '/apps/{appID}/users/{accountType}:{address}/buckets/{bucketID}',  # NOQA
+        UserRequestType.by_id: '/apps/{appID}/users/{userID}/buckets/{bucketID}',
+        UserRequestType.by_me_literal: '/apps/{appID}/users/me/buckets/{bucketID}',
+    }
 
     @property
     def api_path(self):
@@ -66,7 +66,7 @@ class ManageBucketsMixin(AbstractManageMixin, AccountTypeMixin):
                                                        self.account_type,
                                                        self.address,
                                                        self.user_id)
-        return self.paths()[self.request_type].format(**self.format_args())
+        return self.paths[self.request_type].format(**self.format_args())
 
 
 class RetrieveABucket(ManageBucketsMixin, BaseRetrieveABucket):
@@ -107,14 +107,12 @@ class ManageObjectsMixin(AbstractManageMixin):
 
     @property
     def api_path(self):
-        return self.paths()[self.request_type].format(**self.format_args())
+        return self.paths[self.request_type].format(**self.format_args())
 
 
 class CreateAnObject(ManageObjectsMixin, BaseCreateAnObject):
-    def paths(self):
-        return {
-            self.by_address:
-            '/apps/{appID}/users/{accountType}:{address}/buckets/{bucketID}/objects',
-            self.by_id: '/apps/{appID}/users/{userID}/buckets/{bucketID}/objects',
-            self.by_me_literal: '/apps/{appID}/users/me/buckets/{bucketID}/objects',
-        }
+    paths = {
+        UserRequestType.by_address: '/apps/{appID}/users/{accountType}:{address}/buckets/{bucketID}/objects',  # NOQA
+        UserRequestType.by_id: '/apps/{appID}/users/{userID}/buckets/{bucketID}/objects',
+        UserRequestType.by_me_literal: '/apps/{appID}/users/me/buckets/{bucketID}/objects',
+    }

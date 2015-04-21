@@ -2,12 +2,12 @@
 from datetime import datetime
 import json
 
-from kii.buckets.clauses import (
+from kii import exceptions as exc, results as rs
+from kii.data.clauses import (
     Clause,
     AllClause,
     AndClause,
 )
-from kii import exceptions as exc, results as rs
 from kii.helpers import BucketsHelper
 
 

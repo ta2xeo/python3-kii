@@ -61,6 +61,16 @@ class RequestHelper:
         return self.__class__(self.api)
 
 
+class AuthRequestHelper(RequestHelper):
+    @property
+    def headers(self):
+        headers = super().headers
+        headers.update({
+            'Authorization': self.authorization,
+        })
+        return headers
+
+
 class BucketsHelper(RequestHelper):
     def __init__(self, scope):
         self.scope = scope

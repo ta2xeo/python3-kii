@@ -66,6 +66,9 @@ class KiiAPIError(Exception):
         error_code = cls.error_code_from_response(response)
         error_cls = {
             'ACCOUNT_TYPE_NOT_SUPPORTED': KiiAccountTypeNotSupportedError,
+            'ACL_ALREADY_EXISTS': KiiAclAlreadyExistsError,
+            'ACL_NOT_FOUND': KiiAclNotFoundError,
+            'BAD_REQUEST': KiiBadRequestError,
             'BUCKET_NOT_FOUND': KiiBucketNotFoundError,
             'GROUP_NOT_FOUND': KiiGroupNotFoundError,
             'invalid_grant': KiiInvalidGrantError,
@@ -76,8 +79,10 @@ class KiiAPIError(Exception):
             'ObjectBodyNotFoundException': KiiObjectBodyNotFoundError,
             'OBJECT_NOT_FOUND': KiiObjectNotFoundError,
             'OBJECT_VERSION_IS_STALE': KiiObjectVersionIsStaleError,
+            'OPERATION_NOT_ALLOWED': KiiOperationNotAllowedError,
             'PASSWORD_TOO_SHORT': KiiPasswordTooShortError,
             'QUERY_NOT_SUPPORTED': KiiQueryNotSupportedError,
+            'TOPIC_NOT_FOUND': KiiTopicNotFoundError,
             'UNAUTHORIZED': KiiUnauthorizedError,
             'USER_ALREADY_EXISTS': KiiUserAlreadyExistsError,
             'USER_NOT_FOUND': KiiUserNotFoundError,
@@ -149,6 +154,18 @@ class KiiAccountTypeNotSupportedError(KiiAPIError):
     pass
 
 
+class KiiAclAlreadyExistsError(KiiAPIError):
+    pass
+
+
+class KiiAclNotFoundError(KiiAPIError):
+    pass
+
+
+class KiiBadRequestError(KiiAPIError):
+    pass
+
+
 class KiiBucketNotFoundError(KiiAPIError):
     pass
 
@@ -193,11 +210,19 @@ class KiiObjectVersionIsStaleError(KiiAPIError):
     pass
 
 
+class KiiOperationNotAllowedError(KiiAPIError):
+    pass
+
+
 class KiiPasswordTooShortError(KiiAPIError):
     pass
 
 
 class KiiQueryNotSupportedError(KiiAPIError):
+    pass
+
+
+class KiiTopicNotFoundError(KiiAPIError):
     pass
 
 

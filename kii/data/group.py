@@ -1,5 +1,5 @@
 # Group Scope Bucket
-from kii.buckets.application import (
+from kii.data.application import (
     RetrieveABucket as BaseRetrieveABucket,
     DeleteABucket as BaseDeleteABucket,
     CreateAnObject as BaseCreateAnObject,

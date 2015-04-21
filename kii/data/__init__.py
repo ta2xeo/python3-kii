@@ -1,13 +1,15 @@
 from enum import Enum, unique
 
 from kii import exceptions as exc
-from kii.buckets import (
+from kii.data import (
     application as ApplicationScopeBucket,
     group as GroupScopeBucket,
     user as UserScopeBucket,
     clauses,
 )
+from kii.enums import UserRequestType
 from kii.users import AccountTypeMixin
+from kii.utils import Accessor
 
 
 RESERVED_WORDS = ('users', 'devices', 'internal', 'things')
@@ -18,19 +20,7 @@ class BucketType(Enum):
     READ_WRITE = 'rw'
 
 
-class Accessor:
-    def __init__(self, scope):
-        self.scope = scope
-
-    def __getattr__(self, name):
-        try:
-            return getattr(self.scope, name)
-        except AttributeError as e:
-            raise exc.KiiNotImplementedError(
-                '{0} is not implemented in {1} scope.'.format(name, self.scope)) from e
-
-
-class Buckets:
+class DataManagement:
     def __init__(self, api):
         self.application = ApplicationScope(api, Accessor(ApplicationScopeBucket))
         self.group = GroupScope(api, Accessor(GroupScopeBucket))
@@ -40,6 +30,9 @@ class Buckets:
 class Scope:
     def request(self, cls, *args, **kwargs):
         helper = cls(self, *args, **kwargs)
+        if not helper.bucket_id:
+            raise exc.KiiInvalidBucketIdError
+
         return helper.request()
 
     def create_an_object(self, params):
@@ -175,12 +168,6 @@ class GroupScope(ApplicationScope):
 
 
 class UserScope(AccountTypeMixin, ApplicationScope):
-    @unique
-    class RequestType(Enum):
-        by_address = 1
-        by_id = 2
-        by_me_literal = 3
-
     def __init__(self, api, scope, bucket_id=None, *,
                  account_type=None, address=None, user_id=None):
         self.api = api
@@ -210,17 +197,17 @@ class UserScope(AccountTypeMixin, ApplicationScope):
         from kii.api import KiiAdminAPI
 
         if account_type and address:
-            return cls.RequestType.by_address
+            return UserRequestType.by_address
 
         elif user_id:
-            return cls.RequestType.by_id
+            return UserRequestType.by_id
 
         else:
             # http://documentation.kii.com/en/guides/rest/admin-features/
             if isinstance(api, KiiAdminAPI):
                 raise exc.KiiIllegalAccessError
 
-        return cls.RequestType.by_me_literal
+        return UserRequestType.by_me_literal
 
     def retrieve_a_bucket(self, bucket_id, *, account_type=None, address=None, user_id=None):
         req = self.scope.RetrieveABucket(self,
