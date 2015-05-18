@@ -247,6 +247,9 @@ class QueryResult(BaseResult):
     def json(self):
         return [item.json() for item in self]
 
+    def __str__(self):
+        return json.dumps(self.json())
+
     def set_result(self, result):
         self._items = []
         if isinstance(result['results'], list):
@@ -265,19 +268,19 @@ class QueryResult(BaseResult):
 
         if self.next_pagination_key:
             helper = self.request_helper.clone()
+            helper.internal = True
             helper.pagination_key = self.next_pagination_key
             if helper.best_effort_limit is not None:
                 size = len(self)
-                helper.best_effort_limit -= size
                 helper._offset -= size
 
-            if helper.best_effort_limit is None or helper.best_effort_limit > 0:
+            if helper.best_effort_limit is None or helper.best_effort_limit + helper._offset > 0:
                 result = helper.request()
                 self.next_pagination_key = result.next_pagination_key
                 self.query_description = result.query_description
                 self._items.extend(list(result))
 
-        if offset:
+        if offset and self.request_helper.internal is False:
             self._items = self._items[offset:]
 
 

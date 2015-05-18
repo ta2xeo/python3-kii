@@ -213,6 +213,7 @@ class QueryForObjects(BucketsHelper):
                  best_effort_limit=None):
 
         super().__init__(scope)
+        self.internal = False
 
         if clause is None:
             clause = AllClause()
@@ -293,6 +294,9 @@ class QueryForObjects(BucketsHelper):
 
     def all(self):
         return self.request()
+
+    def count(self):
+        return len(self.all())
 
     def first(self):
         results = self.request()
