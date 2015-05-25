@@ -388,14 +388,14 @@ class TestApplicationScopeData:
         for i, r in enumerate(results):
             assert r['index'] == i
 
-        # best_effort_limit
-        results = bucket.query_for_objects(best_effort_limit=2)
+        # limit
+        results = bucket.query_for_objects(limit=2)
         assert len(results) == 2
 
-        results = bucket.query_for_objects(best_effort_limit=4)
+        results = bucket.query_for_objects(limit=4)
         assert len(results) == 4
 
-        results = bucket.query_for_objects(best_effort_limit=OBJ_COUNT + 20)
+        results = bucket.query_for_objects(limit=OBJ_COUNT + 20)
         assert len(results) == OBJ_COUNT
 
     def test_query_for_objects_pagination_key(self):
@@ -411,10 +411,10 @@ class TestApplicationScopeData:
             })
 
         # pagination_key
-        results = bucket.query_for_objects(best_effort_limit=3)
+        results = bucket.query_for_objects(limit=3)
         assert len(results) == 3
 
-        results = bucket.query_for_objects(best_effort_limit=3,
+        results = bucket.query_for_objects(limit=3,
                                            pagination_key=results.next_pagination_key)
         assert len(results) == 3
 
@@ -1247,3 +1247,113 @@ class TestUserScopeBuckets:
         assert isinstance(obj.created_at, datetime)
         assert obj.data_type
         assert obj.data_type == 'application/json'
+
+
+class TestIteration:
+    def setup_method(self, method):
+        """ setup any state tied to the execution of the given method in a
+        class.  setup_method is invoked for every test method of a class.
+        """
+        cleanup()
+        self.api = get_api_with_test_user()
+        self.scope = self.api.data.application
+        self.bucket = self.scope(BUCKET_ID)
+        self.OBJ_COUNT = 10
+        self._create_test_objects()
+
+    def teardown_method(self, method):
+        """ teardown any state that was previously setup with a setup_method
+        call.
+        """
+        try:
+            self.scope.delete_a_bucket(BUCKET_ID)
+        except exc.KiiBucketNotFoundError:
+            pass
+        cleanup()
+
+    def _create_test_objects(self):
+        for i in range(self.OBJ_COUNT):
+            even = i % 2 == 0
+            self.bucket.create_an_object({
+                'index': i,
+                'desc': 'An object number is {0}.'.format(i + 1),
+                'name': 'test user',
+                'even': even,
+            })
+
+    def test_query_all_objects(self):
+        # all
+        results = self.bucket.query().best_effort_limit(50).all()
+        assert len(results) == self.OBJ_COUNT
+
+    def test_best_effort_limit_greater_than_limit(self):
+        # best effort limit
+        LIMIT = 1
+        BEST_EFFORT_LIMIT = 5
+        results = self.bucket.query() \
+                             .best_effort_limit(BEST_EFFORT_LIMIT) \
+                             .limit(LIMIT).order_by('index', False).all()
+        assert len(results) == LIMIT
+        assert results[0]['index'] == 0
+
+    def test_best_effort_limit_less_than_limit(self):
+        LIMIT = 5
+        BEST_EFFORT_LIMIT = 1
+        results = self.bucket.query() \
+                             .best_effort_limit(BEST_EFFORT_LIMIT) \
+                             .limit(LIMIT).order_by('index', False).all()
+        assert len(results) == LIMIT
+
+    def test_best_effort_limit(self):
+        BEST_EFFORT_LIMIT = 2
+        results = self.bucket.query() \
+                             .best_effort_limit(BEST_EFFORT_LIMIT) \
+                             .order_by('index', False).all()
+        assert len(results) == self.OBJ_COUNT
+
+    def test_limit(self):
+        LIMIT = 2
+        results = self.bucket.query() \
+                             .limit(LIMIT) \
+                             .order_by('index', False).all()
+        assert len(results) == LIMIT
+
+    def test_slice(self):
+        results = self.bucket.query().all()
+        assert len(results[:5]) == 5
+        for i, r in enumerate(results[:5]):
+            assert r['index'] == i
+
+        assert len(results[3:]) == self.OBJ_COUNT - 3
+        for i, r in enumerate(results[3:]):
+            assert r['index'] == 3 + i
+
+    def test_offset(self):
+        OFFSET = 2
+        results = self.bucket.query() \
+                             .offset(OFFSET) \
+                             .order_by('index', False).all()
+        assert len(results) == self.OBJ_COUNT - OFFSET
+        assert results[0]['index'] == OFFSET
+
+    def test_offset_and_limit(self):
+        OFFSET = 3
+        LIMIT = 3
+        results = self.bucket.query() \
+                             .offset(OFFSET) \
+                             .limit(LIMIT) \
+                             .order_by('index', False).all()
+        assert len(results) == LIMIT
+        assert results[0]['index'] == OFFSET
+
+    def test_offset_and_limit_and_best_effort_limit(self):
+        OFFSET = 1
+        LIMIT = 6
+        BEST_EFFORT_LIMIT = 2
+        results = self.bucket.query() \
+                             .offset(OFFSET) \
+                             .limit(LIMIT) \
+                             .best_effort_limit(BEST_EFFORT_LIMIT) \
+                             .order_by('index', False).all()
+        assert len(results) == LIMIT
+        assert results[0]['index'] == OFFSET

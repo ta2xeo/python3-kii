@@ -217,30 +217,63 @@ class PublishBodyResult(BaseResult):
 
 
 class QueryResult(BaseResult):
+    def __init__(self, request_helper, response=None):
+        super().__init__(request_helper, response)
+        self._total_items = None
+
+    @property
+    def total_items(self):
+        if self._total_items is None:
+            self._total_items = list(self.__iter__())
+        return self._total_items
+
     def __len__(self):
-        return len(self._items)
+        return len(self.total_items)
 
     def __getitem__(self, key):
-        return self._items[key]
+        return self.total_items[key]
 
     def __setitem__(self, key, val):
-        self._items[key] = val
+        self.total_items[key] = val
 
     def __delitem__(self, key):
-        self._items.pop(key)
+        self.total_items.pop(key)
 
     def __bool__(self):
         return bool(self._items)
 
     def pop(self, index=None):
         if index is None:
-            return self._items.pop()
+            return self.total_items.pop()
         else:
-            return self._items.pop(index)
+            return self.total_items.pop(index)
 
     def __iter__(self):
+        count = -self.request_helper._offset
         for item in self._items:
+            count += 1
+            if count <= 0:
+                continue
+            if self.request_helper._limit and count > self.request_helper._limit:
+                raise StopIteration
             yield item
+
+        if self.next_pagination_key:
+            while self.next_pagination_key:
+                helper = self.request_helper.clone()
+                result = helper.pagination_key(self.next_pagination_key).request()
+
+                for item in result._items:
+                    count += 1
+                    if count <= 0:
+                        continue
+
+                    if self.request_helper._limit and count > self.request_helper._limit:
+                        raise StopIteration
+
+                    yield item
+
+                self.next_pagination_key = result.next_pagination_key
 
         raise StopIteration
 
@@ -263,25 +296,6 @@ class QueryResult(BaseResult):
 
         self.next_pagination_key = result.get('nextPaginationKey', None)
         self.query_description = result.get('queryDescription', None)
-
-        offset = self.request_helper._offset
-
-        if self.next_pagination_key:
-            helper = self.request_helper.clone()
-            helper.internal = True
-            helper.pagination_key = self.next_pagination_key
-            if helper.best_effort_limit is not None:
-                size = len(self)
-                helper._offset -= size
-
-            if helper.best_effort_limit is None or helper.best_effort_limit + helper._offset > 0:
-                result = helper.request()
-                self.next_pagination_key = result.next_pagination_key
-                self.query_description = result.query_description
-                self._items.extend(list(result))
-
-        if offset and self.request_helper.internal is False:
-            self._items = self._items[offset:]
 
 
 class TokenResult(BaseResult):

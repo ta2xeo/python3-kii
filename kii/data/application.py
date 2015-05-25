@@ -210,7 +210,8 @@ class QueryForObjects(BucketsHelper):
                  order_by=None,
                  descending=None,
                  pagination_key=None,
-                 best_effort_limit=None):
+                 best_effort_limit=None,
+                 limit=None):
 
         super().__init__(scope)
         self.internal = False
@@ -220,9 +221,10 @@ class QueryForObjects(BucketsHelper):
 
         self.clause = clause
         self._order_by = order_by
-        self.descending = descending
-        self.pagination_key = pagination_key
-        self.best_effort_limit = best_effort_limit
+        self._descending = descending
+        self._pagination_key = pagination_key
+        self._best_effort_limit = best_effort_limit
+        self._limit = limit
         self._offset = 0
 
     @property
@@ -251,9 +253,10 @@ class QueryForObjects(BucketsHelper):
     def clone(self):
         instance = self.__class__(self.scope, self.clause)
         instance._order_by = self._order_by
-        instance.descending = self.descending
-        instance.pagination_key = self.pagination_key
-        instance.best_effort_limit = self.best_effort_limit
+        instance._descending = self._descending
+        instance._pagination_key = self._pagination_key
+        instance._best_effort_limit = self._best_effort_limit
+        instance._limit = self._limit
         instance._offset = self._offset
         return instance
 
@@ -273,8 +276,8 @@ class QueryForObjects(BucketsHelper):
         if self._order_by is not None:
             query['orderBy'] = self._order_by
 
-            if self.descending is not None:
-                query['descending'] = self.descending
+            if self._descending is not None:
+                query['descending'] = self._descending
 
         return query
 
@@ -284,11 +287,14 @@ class QueryForObjects(BucketsHelper):
         if query:
             params['bucketQuery'] = query
 
-        if self.pagination_key:
-            params['paginationKey'] = self.pagination_key
+        if self._pagination_key:
+            params['paginationKey'] = self._pagination_key
 
-        if self.best_effort_limit:
-            params['bestEffortLimit'] = self.best_effort_limit + self._offset
+        if self._limit and self._best_effort_limit is None:
+            self._best_effort_limit = self._limit
+
+        if self._best_effort_limit:
+            params['bestEffortLimit'] = self._best_effort_limit + self._offset
 
         return params
 
@@ -318,13 +324,25 @@ class QueryForObjects(BucketsHelper):
         self._offset = offset
         return self
 
+    def step(self, step):
+        self._step = step
+        return self
+
+    def best_effort_limit(self, best_effort_limit):
+        self._best_effort_limit = best_effort_limit
+        return self
+
     def limit(self, limit):
-        self.best_effort_limit = limit
+        self._limit = limit
         return self
 
     def order_by(self, key, descending=True):
         self._order_by = key
-        self.descending = descending
+        self._descending = descending
+        return self
+
+    def pagination_key(self, pagination_key):
+        self._pagination_key = pagination_key
         return self
 
     def __str__(self):
