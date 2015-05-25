@@ -264,6 +264,9 @@ class QueryResult(BaseResult):
             yield item
 
         while self.next_pagination_key:
+            if self.request_helper._limit and count >= self.request_helper._limit:
+                raise StopIteration
+
             helper = self.request_helper.clone()
             result = helper.pagination_key(self.next_pagination_key).request()
 

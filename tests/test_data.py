@@ -1359,3 +1359,140 @@ class TestIteration:
         assert len(results) == LIMIT
         for i, r in enumerate(results):
             assert r['index'] == i + OFFSET
+
+    def test_pop(self):
+        results = self.bucket.query() \
+                             .order_by('index', False).all()
+
+        assert len(results) == self.OBJ_COUNT
+
+        last = results.pop()
+        assert last
+        assert last['index'] == self.OBJ_COUNT - 1
+        assert len(results) == self.OBJ_COUNT - 1
+
+        for i, r in enumerate(results):
+            assert r['index'] == i
+
+        head = results.pop(0)
+        assert head['index'] == 0
+        assert len(results) == self.OBJ_COUNT - 2
+
+        for i, r in enumerate(results):
+            assert r['index'] == i + 1
+
+    def test_pop_and_limit(self):
+        LIMIT = 7
+        results = self.bucket.query() \
+                             .limit(LIMIT) \
+                             .order_by('index', False).all()
+
+        assert len(results) == LIMIT
+
+        last = results.pop()
+        assert last
+        assert last['index'] == LIMIT - 1
+        assert len(results) == LIMIT - 1
+
+        for i, r in enumerate(results):
+            assert r['index'] == i
+
+        head = results.pop(0)
+        assert head['index'] == 0
+        assert len(results) == LIMIT - 2
+
+        for i, r in enumerate(results):
+            assert r['index'] == i + 1
+
+    def test_pop_and_best_effort_limit(self):
+        BEST_EFFORT_LIMIT = 2
+        results = self.bucket.query() \
+                             .best_effort_limit(BEST_EFFORT_LIMIT) \
+                             .order_by('index', False).all()
+
+        assert len(results) == self.OBJ_COUNT
+
+        last = results.pop()
+        assert last
+        assert last['index'] == self.OBJ_COUNT - 1
+        assert len(results) == self.OBJ_COUNT - 1
+
+        for i, r in enumerate(results):
+            assert r['index'] == i
+
+        head = results.pop(0)
+        assert head['index'] == 0
+        assert len(results) == self.OBJ_COUNT - 2
+
+        for i, r in enumerate(results):
+            assert r['index'] == i + 1
+
+    def test_pop_and_offset(self):
+        OFFSET = 2
+        results = self.bucket.query() \
+                             .offset(OFFSET) \
+                             .order_by('index', False).all()
+
+        assert len(results) == self.OBJ_COUNT - OFFSET
+
+        last = results.pop()
+        assert last
+        assert last['index'] == self.OBJ_COUNT - 1
+        assert len(results) == self.OBJ_COUNT - OFFSET - 1
+
+        for i, r in enumerate(results):
+            assert r['index'] == i + OFFSET
+
+        head = results.pop(0)
+        assert head['index'] == OFFSET
+        assert len(results) == self.OBJ_COUNT - OFFSET - 2
+
+        for i, r in enumerate(results):
+            assert r['index'] == i + 1 + OFFSET
+
+    def test_pop_and_limit_and_best_effort_limit_and_offset(self):
+        OFFSET = 2
+        BEST_EFFORT_LIMIT = 2
+        LIMIT = 4
+        results = self.bucket.query() \
+                             .limit(LIMIT) \
+                             .best_effort_limit(BEST_EFFORT_LIMIT) \
+                             .offset(OFFSET) \
+                             .order_by('index', False).all()
+
+        assert len(results) == LIMIT
+
+        last = results.pop()
+        assert last
+        assert last['index'] == OFFSET + LIMIT - 1
+        assert len(results) == LIMIT - 1
+
+        for i, r in enumerate(results):
+            assert r['index'] == i + OFFSET
+
+        head = results.pop(0)
+        assert head['index'] == OFFSET
+        assert len(results) == LIMIT - 2
+
+        for i, r in enumerate(results):
+            assert r['index'] == i + 1 + OFFSET
+
+    def test_pop_zero(self):
+        results = self.bucket.query() \
+                             .order_by('index', False).all()
+
+        assert len(results) == self.OBJ_COUNT
+        counter = 0
+        while results:
+            counter += 1
+            last = results.pop()
+            if not last:
+                break
+            assert last
+            assert last['index'] == self.OBJ_COUNT - counter
+            if last['index'] == 0:
+                assert bool(results) is False
+            else:
+                assert bool(results) is True
+
+        assert counter == self.OBJ_COUNT
