@@ -1344,7 +1344,8 @@ class TestIteration:
                              .limit(LIMIT) \
                              .order_by('index', False).all()
         assert len(results) == LIMIT
-        assert results[0]['index'] == OFFSET
+        for i, r in enumerate(results):
+            assert r['index'] == i + OFFSET
 
     def test_offset_and_limit_and_best_effort_limit(self):
         OFFSET = 1
@@ -1356,4 +1357,5 @@ class TestIteration:
                              .best_effort_limit(BEST_EFFORT_LIMIT) \
                              .order_by('index', False).all()
         assert len(results) == LIMIT
-        assert results[0]['index'] == OFFSET
+        for i, r in enumerate(results):
+            assert r['index'] == i + OFFSET

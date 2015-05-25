@@ -240,7 +240,7 @@ class QueryResult(BaseResult):
         self.total_items.pop(key)
 
     def __bool__(self):
-        return bool(self._items)
+        return bool(self.total_items)
 
     def pop(self, index=None):
         if index is None:
@@ -249,6 +249,11 @@ class QueryResult(BaseResult):
             return self.total_items.pop(index)
 
     def __iter__(self):
+        if self._total_items is not None:
+            for item in self._total_items:
+                yield item
+            raise StopIteration
+
         count = -self.request_helper._offset
         for item in self._items:
             count += 1
@@ -258,22 +263,21 @@ class QueryResult(BaseResult):
                 raise StopIteration
             yield item
 
-        if self.next_pagination_key:
-            while self.next_pagination_key:
-                helper = self.request_helper.clone()
-                result = helper.pagination_key(self.next_pagination_key).request()
+        while self.next_pagination_key:
+            helper = self.request_helper.clone()
+            result = helper.pagination_key(self.next_pagination_key).request()
 
-                for item in result._items:
-                    count += 1
-                    if count <= 0:
-                        continue
+            for item in result._items:
+                count += 1
+                if count <= 0:
+                    continue
 
-                    if self.request_helper._limit and count > self.request_helper._limit:
-                        raise StopIteration
+                if self.request_helper._limit and count > self.request_helper._limit:
+                    raise StopIteration
 
-                    yield item
+                yield item
 
-                self.next_pagination_key = result.next_pagination_key
+            self.next_pagination_key = result.next_pagination_key
 
         raise StopIteration
 
