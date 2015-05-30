@@ -499,3 +499,9 @@ class GroupInformationResult(GroupResult):
     @property
     def owner(self):
         return self._result['owner']
+
+
+class VerificationCodeResult(BaseResult):
+    @property
+    def verification_code(self):
+        return self._result['verificationCode']

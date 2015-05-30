@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum, unique
 
 from kii import exceptions as exc, results as rs
+from kii.enums import UserRequestType
 from kii.helpers import RequestHelper
 
 
@@ -9,6 +10,7 @@ from kii.helpers import RequestHelper
 class AccountType(Enum):
     email = 'EMAIL'
     phone = 'PHONE'
+    login_name = 'LOGIN_NAME'
 
 
 class AccountTypeMixin:
@@ -28,6 +30,72 @@ class AccountTypeMixin:
                     'account type "{0}" is invalid'.format(account_type))
 
         self._account_type = account_type
+
+
+class RequestTypeMixin(AccountTypeMixin):
+    @property
+    def request_type(self):
+        return RequestTypeMixin.get_request_type(self.api,
+                                                 self.account_type,
+                                                 self.address,
+                                                 self.user_id)
+
+    @classmethod
+    def get_request_type(cls, api, account_type, address, user_id):
+        from kii.api import KiiAdminAPI
+
+        if account_type and address:
+            return UserRequestType.by_address
+
+        elif user_id:
+            return UserRequestType.by_id
+
+        else:
+            # http://documentation.kii.com/en/guides/rest/admin-features/
+            if isinstance(api, KiiAdminAPI):
+                raise exc.KiiIllegalAccessError
+
+        return UserRequestType.by_me_literal
+
+
+class UserRequestHelper(RequestHelper, RequestTypeMixin):
+    method = 'GET'
+    result_container = rs.BaseResult
+
+    def __init__(self, api, *, account_type=None, address=None, user_id=None):
+        super().__init__(api)
+        self.account_type = account_type
+        self.address = address
+        self.user_id = user_id
+
+    def format_args(self):
+        def by_address():
+            return {
+                'appID': self.api.app_id,
+                'accountType': self.account_type,
+                'address': self.address,
+            }
+
+        def by_id():
+            return {
+                'appID': self.api.app_id,
+                'userID': self.user_id,
+            }
+
+        def by_me_literal():
+            return {
+                'appID': self.api.app_id,
+            }
+
+        return {
+            UserRequestType.by_address: by_address,
+            UserRequestType.by_id: by_id,
+            UserRequestType.by_me_literal: by_me_literal,
+        }[self.request_type]()
+
+    @property
+    def api_path(self):
+        return self.paths[self.request_type].format(**self.format_args())
 
 
 class UserManagement:
@@ -57,6 +125,23 @@ class UserManagement:
                                   account_type=account_type,
                                   address=address,
                                   user_id=user_id)
+        result = helper.request()
+        return result
+
+    def get_the_verification_code(self, *, account_type=None, address=None, user_id=None):
+        helper = GetTheVerificationCode(self.api,
+                                        account_type=account_type,
+                                        address=address,
+                                        user_id=user_id)
+        result = helper.request()
+        return result
+
+    def verify_the_email_address(self, verification_code, *, account_type=None, address=None, user_id=None):
+        helper = VerifyTheEmailAddress(self.api,
+                                       verification_code,
+                                       account_type=account_type,
+                                       address=address,
+                                       user_id=user_id)
         result = helper.request()
         return result
 
@@ -157,36 +242,14 @@ class CreateAUserAndObtainAccessToken(CreateAUser):
         return headers
 
 
-class DeleteAUser(RequestHelper):
+class DeleteAUser(UserRequestHelper, RequestTypeMixin):
     method = 'DELETE'
     result_container = rs.BaseResult
-
-    def __init__(self, api, *, account_type=None, address=None, user_id=None):
-        super().__init__(api)
-        self.account_type = account_type
-        self.address = address
-        self.user_id = user_id
-
-    @property
-    def api_path(self):
-        from kii.api import KiiAdminAPI
-
-        if self.account_type and self.address:
-            return '/apps/{appID}/users/{accountType}:{address}'.format(
-                appID=self.api.app_id,
-                accountType=self.account_type,
-                address=self.address
-            )
-        elif self.user_id:
-            return '/apps/{appID}/users/{userID}'.format(
-                appID=self.api.app_id,
-                userID=self.user_id
-            )
-
-        if isinstance(self.api, KiiAdminAPI):
-            raise exc.KiiIllegalAccessError
-
-        return '/apps/{appID}/users/me'.format(appID=self.api.app_id)
+    paths = {
+        UserRequestType.by_address: '/apps/{appID}/users/{accountType}:{address}',
+        UserRequestType.by_id: '/apps/{appID}/users/{userID}',
+        UserRequestType.by_me_literal: '/apps/{appID}/users/me',
+    }
 
     @property
     def headers(self):
@@ -200,6 +263,55 @@ class DeleteAUser(RequestHelper):
 class RetrieveUserData(DeleteAUser):
     method = 'GET'
     result_container = rs.UserResult
+
+
+class GetTheVerificationCode(UserRequestHelper):
+    method = 'GET'
+    result_container = rs.VerificationCodeResult
+    paths = {
+        UserRequestType.by_address: '/apps/{appID}/users/{accountType}:{address}/email-address/verification-code',
+        UserRequestType.by_id: '/apps/{appID}/users/{userID}/email-address/verification-code',
+        UserRequestType.by_me_literal: '/apps/{appID}/users/me/email-address/verification-code',
+    }
+
+    @property
+    def headers(self):
+        headers = super().headers
+        headers.update({
+            'Authorization': self.authorization,
+        })
+        return headers
+
+
+class VerifyTheEmailAddress(UserRequestHelper):
+    method = 'POST'
+    paths = {
+        UserRequestType.by_address: '/apps/{appID}/users/{accountType}:{address}/email-address/verify',
+        UserRequestType.by_id: '/apps/{appID}/users/{userID}/email-address/verify',
+        UserRequestType.by_me_literal: '/apps/{appID}/users/me/email-address/verify',
+    }
+
+    def __init__(self, api, verification_code, *, account_type=None, address=None, user_id=None):
+        super().__init__(api,
+                         account_type=account_type,
+                         address=address,
+                         user_id=user_id)
+        self.verification_code = verification_code
+
+    @property
+    def headers(self):
+        headers = super().headers
+        headers.update({
+            'Content-Type': 'application/vnd.kii.AddressVerificationRequest+json',
+        })
+        return headers
+
+    def request(self):
+        params = {
+            'verificationCode': self.verification_code,
+        }
+
+        return super().request(json=params)
 
 
 class RequestANewToken(RequestHelper):
