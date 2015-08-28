@@ -42,7 +42,9 @@ class KiiAPIError(Exception):
         if error:
             return error
 
-        content_type = response.headers['Content-Type']
+        content_type = response.headers.get('Content-Type')
+        if not content_type:
+            return response
 
         if response.text == '{}' and content_type == 'application/json':
             error = {
