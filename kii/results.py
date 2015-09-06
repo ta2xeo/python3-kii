@@ -216,6 +216,12 @@ class PublishBodyResult(BaseResult):
         return self._result['url']
 
 
+class QueryCountResult(BaseResult):
+    @property
+    def count(self):
+        return self._result['aggregations']['count_field']
+
+
 class QueryResult(BaseResult):
     def __init__(self, request_helper, response=None):
         super().__init__(request_helper, response)

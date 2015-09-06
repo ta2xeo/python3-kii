@@ -584,6 +584,25 @@ class TestApplicationQuery:
         for i, r in enumerate(results):
             assert r['index'] == i + cls.OBJ_COUNT - 2
 
+    def test_query_count(self):
+        cls = TestApplicationQuery
+        bucket = cls.scope(BUCKET_ID)
+
+        # all
+        query = bucket.query()
+        results = query.all()
+        count = query.count()
+        assert len(results) == self.OBJ_COUNT
+        assert count == self.OBJ_COUNT
+
+        # query
+        clause = cl.EqualClause('even', True)
+        query = bucket.query(clause)
+        results = query.all()
+        count = query.count()
+        assert len(results) == int(self.OBJ_COUNT / 2)
+        assert count == int(self.OBJ_COUNT / 2)
+
 
 class TestApplicationObjectBody:
     @classmethod

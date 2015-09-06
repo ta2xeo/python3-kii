@@ -226,6 +226,7 @@ class QueryForObjects(BucketsHelper):
         self._best_effort_limit = best_effort_limit
         self._limit = limit
         self._offset = 0
+        self._aggregations = []
 
     @property
     def api_path(self):
@@ -279,6 +280,9 @@ class QueryForObjects(BucketsHelper):
             if self._descending is not None:
                 query['descending'] = self._descending
 
+        if self._aggregations:
+            query['aggregations'] = self._aggregations
+
         return query
 
     def _assemble(self):
@@ -302,7 +306,15 @@ class QueryForObjects(BucketsHelper):
         return self.request()
 
     def count(self):
-        return len(self.all())
+        self.result_container = rs.QueryCountResult
+        self._aggregations = [
+            {
+                "type": "COUNT",
+                "putAggregationInto": "count_field"
+            }
+        ]
+        result = self.request()
+        return result.count
 
     def first(self):
         results = self.request()
