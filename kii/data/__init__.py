@@ -1,4 +1,5 @@
 from enum import Enum, unique
+import os
 
 from kii import exceptions as exc
 from kii.data import (
@@ -109,6 +110,58 @@ class Scope:
                                expires_at=None, expires_in=None):
         return self.request(self.scope.PublishAnObjectBody, object_id,
                             expires_at=expires_at, expires_in=expires_in)
+
+    def start_uploading_an_object_body(self, object_id):
+        return self.request(self.scope.StartUploadingAnObjectBody, object_id)
+
+    def get_the_upload_metadata(self, object_id, upload_id):
+        return self.request(self.scope.GetTheUploadMetadata, object_id, upload_id)
+
+    def upload_the_given_object_data(self, object_id, upload_id, body, content_type,
+                                     start_byte, end_byte, total_byte):
+        return self.request(self.scope.UploadTheGivenObjectData,
+                            object_id, upload_id, body, content_type,
+                            start_byte, end_byte, total_byte)
+
+    def set_the_object_body_upload_status_to_committed(self, object_id, upload_id):
+        return self.request(self.scope.SetTheObjectBodyUploadStatusToCommitted,
+                            object_id, upload_id)
+
+    def set_the_object_body_upload_status_to_cancelled(self, object_id, upload_id):
+        return self.request(self.scope.SetTheObjectBodyUploadStatusToCancelled,
+                            object_id, upload_id)
+
+    def upload_body_multiple_pieces(self, object_id, fileobj, content_type,
+                                    piece_byte=1024 * 1024):  # 1MB
+        upload_id = self.start_uploading_an_object_body(object_id).upload_id
+        filesize = os.fstat(fileobj.fileno()).st_size
+
+        def upload():
+            size, start, end = 0, 0, piece_byte
+
+            while True:
+                # tail
+                if end >= filesize:
+                    end = filesize - 1
+
+                size = end - start + 1
+                self.upload_the_given_object_data(object_id, upload_id, fileobj.read(size),
+                                                  content_type, start, end, filesize)
+
+                if end + 1 >= filesize:
+                    break
+
+                start = end + 1
+                end = start + piece_byte
+
+            self.set_the_object_body_upload_status_to_committed(object_id, upload_id)
+
+        try:
+            upload()
+            return True
+        except:
+            self.set_the_object_body_upload_status_to_cancelled(object_id, upload_id)
+            return False
 
 
 class ApplicationScope(Scope):

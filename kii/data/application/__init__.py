@@ -554,3 +554,10 @@ class PublishAnObjectBody(BucketsHelper):
             data['expiresIn'] = self.expires_in
 
         return super().request(json=data)
+
+
+from .startuploadinganobjectbody import StartUploadingAnObjectBody  # NOQA
+from .gettheuploadmetadata import GetTheUploadMetadata  # NOQA
+from .uploadthegivenobjectdata import UploadTheGivenObjectData  # NOQA
+from .settheobjectbodyuploadstatustocommitted import SetTheObjectBodyUploadStatusToCommitted  # NOQA
+from .settheobjectbodyuploadstatustocancelled import SetTheObjectBodyUploadStatusToCancelled  # NOQA

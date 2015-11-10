@@ -78,7 +78,10 @@ class KiiAPIError(Exception):
             'METHOD_NOT_ALLOWED': KiiMethodNotAllowedError,
             'NOT_FOUND': KiiNotFoundError,
             'OBJECT_BODY_NOT_FOUND': KiiObjectBodyNotFoundError,
+            'OBJECT_BODY_RANGE_NOT_SATISFIABLE': KiiObjectBodyRangeNotSatisfiableError,
+            'OBJECT_BODY_UPLOAD_NOT_FOUND': KiiObjectBodyUploadNotFoundError,
             'ObjectBodyNotFoundException': KiiObjectBodyNotFoundError,
+            'ObjectBodyUploadNotFoundException': KiiObjectBodyUploadNotFoundException,
             'OBJECT_NOT_FOUND': KiiObjectNotFoundError,
             'OBJECT_VERSION_IS_STALE': KiiObjectVersionIsStaleError,
             'OPERATION_NOT_ALLOWED': KiiOperationNotAllowedError,
@@ -201,6 +204,18 @@ class KiiNotImplementedError(KiiAPIError):
 
 
 class KiiObjectBodyNotFoundError(KiiAPIError):
+    pass
+
+
+class KiiObjectBodyRangeNotSatisfiableError(KiiAPIError):
+    pass
+
+
+class KiiObjectBodyUploadNotFoundError(KiiAPIError):
+    pass
+
+
+class KiiObjectBodyUploadNotFoundException(KiiAPIError):
     pass
 
 
