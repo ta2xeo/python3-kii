@@ -148,8 +148,7 @@ class TestApplicationUpload:
         filepath = os.path.join(os.path.dirname(__file__), '..', '..', 'test.mp4')
 
         with open(filepath, 'rb') as f:
-            r = b.upload_body_multiple_pieces(self.obj._id, f.read(), 'video/mp4')
-            assert r is True
+            b.upload_body_multiple_pieces(self.obj._id, f.read(), 'video/mp4')
 
     def test_upload_body_multiple_pieces2(self):
         b = self.api.data.application(BUCKET_ID)
@@ -157,5 +156,4 @@ class TestApplicationUpload:
         filepath = os.path.join(os.path.dirname(__file__), '..', '..', 'test.mp4')
 
         with open(filepath, 'rb') as f:
-            r = self.obj.upload_body_multiple_pieces(f.read(), 'video/mp4')
-            assert r is True
+            self.obj.upload_body_multiple_pieces(f.read(), 'video/mp4')

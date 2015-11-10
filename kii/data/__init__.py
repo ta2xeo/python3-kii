@@ -156,10 +156,9 @@ class Scope:
 
         try:
             upload()
-            return True
-        except:
+        except Exception as e:
             self.set_the_object_body_upload_status_to_cancelled(object_id, upload_id)
-            return False
+            raise e
 
 
 class ApplicationScope(Scope):
