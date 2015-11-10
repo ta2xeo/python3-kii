@@ -65,3 +65,7 @@ class ObjectResult(BaseResult):
         return scope.publish_an_object_body(self._id,
                                             expires_at=expires_at,
                                             expires_in=expires_in)
+
+    def upload_body_multiple_pieces(self, body, content_type, piece_byte=1024 * 1024):
+        scope = self.request_helper.scope
+        return scope.upload_body_multiple_pieces(self._id, body, content_type, piece_byte)
