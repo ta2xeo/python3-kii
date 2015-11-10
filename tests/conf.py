@@ -67,6 +67,9 @@ def get_test_user():
                                                           password=test_user['password'],
                                                           email_address=test_user['email'],
                                                           phone_number=test_user['phone'])
+    admin = get_admin_api()
+    code = admin.user.get_the_verification_code(user_id=user.user_id)
+    admin.user.verify_the_email_address(code['verificationCode'], user_id=user.user_id)
     return user
 
 

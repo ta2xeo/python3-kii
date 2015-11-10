@@ -198,11 +198,13 @@ class AclUser:
 
         # dummy user
         email = 'dummy@example.com'
+        login_name = 'dummy_acl_user'
         try:
             cls.dummy = cls.api.user.retrieve_user_data(account_type=AccountType.email.value,
                                                         address=email)
         except exc.KiiUserNotFoundError:
-            cls.dummy = cls.api.user.create_a_user(email_address=email, password='password')
+            cls.dummy = cls.api.user.create_a_user(login_name=login_name,
+                                                   email_address=email, password='password')
 
     @classmethod
     def teardown_class(cls):

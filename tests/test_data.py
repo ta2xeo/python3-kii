@@ -1109,7 +1109,7 @@ class TestUserScopeBuckets:
             self.scope.delete_a_bucket(BUCKET_ID)
         except exc.KiiBucketNotFoundError:
             pass
-        cleanup()
+        # cleanup()
 
     def test_retrieve_bucket_by_me(self):
         obj = self.scope(BUCKET_ID).create_an_object({
