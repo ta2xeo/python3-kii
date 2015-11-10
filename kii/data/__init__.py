@@ -1,5 +1,4 @@
 from enum import Enum, unique
-import os
 
 from kii import exceptions as exc
 from kii.data import (
@@ -131,21 +130,20 @@ class Scope:
         return self.request(self.scope.SetTheObjectBodyUploadStatusToCancelled,
                             object_id, upload_id)
 
-    def upload_body_multiple_pieces(self, object_id, fileobj, content_type,
+    def upload_body_multiple_pieces(self, object_id, body, content_type,
                                     piece_byte=1024 * 1024):  # 1MB
         upload_id = self.start_uploading_an_object_body(object_id).upload_id
-        filesize = os.fstat(fileobj.fileno()).st_size
+        filesize = len(body)
 
         def upload():
-            size, start, end = 0, 0, piece_byte
+            start, end = 0, piece_byte
 
             while True:
                 # tail
                 if end >= filesize:
                     end = filesize - 1
 
-                size = end - start + 1
-                self.upload_the_given_object_data(object_id, upload_id, fileobj.read(size),
+                self.upload_the_given_object_data(object_id, upload_id, body[start:end + 1],
                                                   content_type, start, end, filesize)
 
                 if end + 1 >= filesize:
