@@ -40,7 +40,7 @@ class QueryResult(BaseResult):
         if self._total_items is not None:
             for item in self._total_items:
                 yield item
-            raise StopIteration
+            return
 
         count = -self.request_helper._offset
         for item in self._items:
@@ -48,12 +48,12 @@ class QueryResult(BaseResult):
             if count <= 0:
                 continue
             if self.request_helper._limit and count > self.request_helper._limit:
-                raise StopIteration
+                return
             yield item
 
         while self.next_pagination_key:
             if self.request_helper._limit and count >= self.request_helper._limit:
-                raise StopIteration
+                return
 
             helper = self.request_helper.clone()
             result = helper.pagination_key(self.next_pagination_key).request()
@@ -64,13 +64,11 @@ class QueryResult(BaseResult):
                     continue
 
                 if self.request_helper._limit and count > self.request_helper._limit:
-                    raise StopIteration
+                    return
 
                 yield item
 
             self.next_pagination_key = result.next_pagination_key
-
-        raise StopIteration
 
     def json(self):
         return [item.json() for item in self]

@@ -20,7 +20,6 @@ class BaseResult(MutableMapping):
     def __iter__(self):
         for some in self._result:
             yield some
-        raise StopIteration
 
     def __len__(self):
         return len(self._result)
