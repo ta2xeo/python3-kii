@@ -71,7 +71,7 @@ class QueryResult(BaseResult):
             self.next_pagination_key = result.next_pagination_key
 
     def json(self):
-        return [item.json() for item in self]
+        return [item.json() for item in self.total_items]
 
     def __str__(self):
         return json.dumps(self.json())
